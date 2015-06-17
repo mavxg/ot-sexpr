@@ -11,6 +11,8 @@
 
 //with linearisation we also need UP and DOWN (with kind)
 
+//with critical regions we also need START END
+
 var doc     = "doc";
 var p       = "p";
 var bold    = "bold";
@@ -22,8 +24,10 @@ var POP     = "pop";
 var DELETE  = "delete";
 var UNPOP   = "unpop";
 var UNPUSH  = "unpush";
-var UP      = "up"
-var DOWN    = "down"
+var UP      = "up";
+var DOWN    = "down";
+var START   = "start";
+var END     = "end";
 
 var popA    = {op:POP, kind:""};
 var popS    = {op:POP, kind:[]};
@@ -33,22 +37,28 @@ var pushA   = {op:PUSH, kind:[]};
 var pushS   = {op:PUSH, kind:""};
 var unpushA = {op:UNPUSH, kind:[]};
 var unpushS = {op:UNPUSH, kind:""};
+
+//linearisation
 var upA     = {op:UP, kind:[]};
 var upS     = {op:UP, kind:""};
 var downA   = {op:DOWN, kind:[]};
 var downS   = {op:DOWN, kind:""};
 
+//critical regions
+var start   = {op:START};
+var end     = {op:END};
 
+//standard text/list operations
 function r(n) {
   return {op:RETAIN, n:n};
 }
 
 function i(vs) {
-  return {op:INSERT, values:vs};
+  return {op:INSERT, values:vs, n:vs.length};
 }
 
 function d(vs) {
-  return {op:DELETE, values:vs};
+  return {op:DELETE, values:vs, n:vs.length};
 }
 
 var doca = [doc,[],[p,[],"Hello, World!"]];
@@ -67,6 +77,8 @@ var lopb = [upA,r(2),upA,r(2),upS,r(7),
 // [upX,r(n),downX] ->[r(1)]
 // [r(a),r(b)] -> [r(a+b)]
 // [i(a),i(b)] -> [i(a+b)] //where + is concat if array.
+// [start,end] -> []
+// [r(0)]      -> []
 
 function push(ops, op) {
   //TODO (check rules first)
@@ -121,25 +133,98 @@ function makeAppend(result) {
   };
 }
 
+function makeTake(ops) {
+  var i = 0; //current operation
+  var offset = 0; //sub offset within operation
+
+  //I think we are going to need a stack here too.
+
+  //TODO: this probably needs to take a level.
+  function take(n,flags) {
+    if (i === ops.length)
+      return (n === -1) ? null : r(n);
+
+    var part;
+    var c = ops[i];
+    if (n === -1) {
+      //return the remainder of the current operation
+      part = c;//_slice()
+      i++;
+      offset=0;
+      return part;
+    } else {
+      //return a slice of the current operation
+      //TODO THIS is not it.
+      i++;
+      return c;
+    } 
+    //TODO
+  }
+
+  function peek() {
+    return ops[i];
+  }
+
+  return {
+    take: take,
+    peek: peek,
+  }
+}
+
 function compose(opA, opB) {
   var result = [];
+  var critical = 0;
 
   var append = makeAppend(result);
-  //TODO
+  var _funs  = makeTake(opA);
+  var take   = _funs.take;
+  var peek   = _funs.peek;
+
+  var chunk;
+
+  for (var i = 0; i < opB.length; i++) {
+    var op = opB[i];
+
+    //TODO
+
+  };
+
+  while ((chunk = take(-1)))
+    append(chunk);
+
   return result;
 }
 
-function transform(op1, op2, side) {
+function transform(opA, opB, side) {
   var left = side == 'left';
-  //TODO
-  return op1;
+  var result = [];
+  var critical = 0;
+
+  var append = makeAppend(result);
+  var _funs  = makeTake(opA);
+  var take   = _funs.take;
+  var peek   = _funs.peek;
+
+  var chunk;
+  
+  for (var i = 0; i < opB.length; i++) {
+    var op = opB[i];
+
+    //TODO
+
+  };
+
+  while ((chunk = take(-1)))
+    append(chunk);
+
+  return result;
 }
 
 function applyl(d,ops) {
   var stack = []
   var t = [];
   var docStack = [];
-  var dp = [d]; //wrap the doc so the first upA gets it.
+  var dp = [d]; //wrap the doc so we can do [r(1)] and change nothing.
   var o = 0;
 
   function append(vals) {
@@ -173,7 +258,7 @@ function applyl(d,ops) {
           t.push(temp);
         break;
       case DELETE:
-        o += op.values.length;
+        o += op.n;
         break;
       case UNPUSH:
         //move deeper into the doc
@@ -206,7 +291,9 @@ function applyl(d,ops) {
         else
           t.push(temp);
         break;
-
+      default:
+        //do nothing for Start and End.
+        break;
     }
   };
 
