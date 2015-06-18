@@ -67,6 +67,9 @@ var opa = [upA,r(2),upA,r(2),upS,r(7),i("Cruel "),r(6),down,down,down];
 var opb = [upA,r(2),upA,r(2),upS,r(7),
   pop,pushA,i(["bold",[]]),pushS,r(6),down,pop,down,down];
 
+//target = compose(opa,opbp) = compose(opb,opap)
+var opab = [upA,r(2),upA,r(2),upS,r(7),
+  pop,pushA,i(["bold",[]]),pushS,i("Cruel "),r(6),pop,down,down,down]
 
 //target transformed
 var opbp = [upA,r(2),upA,r(2),upS,r(7),
@@ -82,9 +85,10 @@ var opap = [upA,r(2),upA,r(2),upS,r(7),
 // [r(a),r(b)] -> [r(a+b)]
 // [i(a),i(b)] -> [i(a+b)] //where + is concat if array.
 // [start,end] -> []
+// [end,start] -> []
 // [r(0)]      -> []
 
-function push(ops, op) {
+function _push(ops, op) {
   //TODO (check rules first)
   return ops.push(op);
 }
@@ -126,36 +130,43 @@ function invert(ops) {
 
 function makeAppend(result) {
   return function(op) { 
-    return push(result, op); 
+    return _push(result, op); 
   };
+}
+
+function _slice(op, s, e) {
+  switch (op.op) {
+    case INSERT: return i(op.values.slice(s,e));
+    case DELETE: return d(op.values.slice(s,e));
+    case RETAIN: return r((e === undefined ? op.n : e) - s);
+    default:     return op;
+  }
 }
 
 function makeTake(ops) {
   var i = 0; //current operation
   var offset = 0; //sub offset within operation
 
-  //I think we are going to need a stack here too.
-
-  //TODO: this probably needs to take a level.
-  function take(n,flags) {
+  function take(n,indivisableField) {
     if (i === ops.length)
       return (n === -1) ? null : r(n);
 
     var part;
     var c = ops[i];
-    if (n === -1) {
+    if (n === -1
+      || c.n === undefined
+      || c.n - offset <= n
+      || c.op === indivisableField) {
       //return the remainder of the current operation
-      part = c;//_slice()
+      part = _slice(c, offset)
       i++;
       offset=0;
       return part;
     } else {
-      //return a slice of the current operation
-      //TODO THIS is not it.
-      i++;
-      return c;
-    } 
-    //TODO
+      part = _slice(c, offset, offset + n);
+      offset += n;
+      return part;
+    }
   }
 
   function peek() {
@@ -171,6 +182,8 @@ function makeTake(ops) {
 function compose(opA, opB) {
   var result = [];
   var critical = 0;
+  var level_b = 0; //does not include push pop
+  var level_a = 0; //includes push and pop
 
   var append = makeAppend(result);
   var _funs  = makeTake(opA);
@@ -178,16 +191,95 @@ function compose(opA, opB) {
   var peek   = _funs.peek;
 
   var chunk;
+  var length = 0;
 
   for (var i = 0; i < opB.length; i++) {
     var op = opB[i];
-
-    //TODO
-
+    switch (op.op) {
+      case PUSH:
+      case POP:
+      case UNPUSH:
+      case UNPOP:
+      case INSERT:
+        append(op);
+        break;
+      case UP:
+        level_b++;
+        chunk = peek();
+        if (chunk && (chunk.op === UP || chunk.op === PUSH)) {
+          append(take(-1))
+          level_a++;
+        } else {
+          append(op);
+        }
+        break;
+      case DOWN:
+        level_b--;
+        chunk = peek();
+        if (chunk && (chunk.op === DOWN || chunk.op === POP)) {
+          append(take(-1))
+          level_a--;
+          break;
+        } else {
+          append(op);
+          if (level_b === level_a)
+            op = r(1); //fall through to retain !!!
+          else
+            break;
+        }
+      case RETAIN:
+        length = op.n;
+        while (length > 0) {
+          chunk = take(length, DELETE);
+          switch (chunk.op) {
+            case INSERT:
+            case RETAIN:
+              append(chunk);
+              length -= chunk.n;
+              break;
+            case DOWN:
+            case POP:
+              level_a--;
+              if (level_a===level_b) length -= 1;
+              append(chunk);
+              break;
+            case UP:
+            case PUSH:
+              level_b++;
+              append(chunk);
+              break;
+            case START:
+              if (critical === 0) append(chunk);
+              critical++;
+              break;
+            case STOP:
+              critical--;
+              if (critical === 0) append(chunk);
+              break;
+            default:
+              append(chunk);
+              break;
+          }
+        }
+        break;
+      case DELETE:
+        length = op.n;
+        //TODO
+        // peek loop at end to gobble all the pushes and pops.
+        break;
+      case START:
+        if (critical === 0) append(op);
+        critical++;
+        break;
+      case STOP:
+        critical--;
+        if (critical === 0) append(op);
+        break;
+    }
   };
 
   while ((chunk = take(-1)))
-    append(chunk);
+    append(chunk); //TODO: probably need special cases for each..
 
   return result;
 }
