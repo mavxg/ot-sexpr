@@ -17,7 +17,10 @@ var upS = opt.upS;
 var down = opt.down;
 var pushS = opt.pushS;
 var pushA = opt.pushA;
+var unpushS = opt.unpushS;
+var unpushA = opt.unpushA;
 var pop = opt.pop;
+var unpop = opt.unpop;
 
 var doc     = "doc";
 var p       = "p";
@@ -30,15 +33,20 @@ var docb = [doc,[],[p,[],'Hello, ',[bold,[],'World!']]];
 var opa = [upA,r(2),upA,r(2),upS,r(7),i("Cruel "),r(6),down,down,down];
 //bold text
 var opb = [upA,r(2),upA,r(2),upS,r(7),
-  pop,pushA,i(["bold",[]]),pushS,r(6),pop,down,down,down];
+  pop,pushA,i([bold,[]]),pushS,r(6),pop,down,down,down];
+
+//invert targets
+var opbi = [upA,r(2),upA,r(2),upS,r(7),
+  unpop,unpushA,d([bold,[]]),unpushS,r(6),unpop,down,down,down]
 
 //target = compose(opa,opbp) = compose(opb,opap)
 var opab = [upA,r(2),upA,r(2),upS,r(7),
-  pop,pushA,i(["bold",[]]),pushS,i("Cruel "),r(6),pop,down,down,down]
+  pop,pushA,i([bold,[]]),pushS,i("Cruel "),r(6),pop,down,down,down]
+
 
 //target transformed
 var opbp = [upA,r(2),upA,r(2),upS,r(7),
-  pop,pushA,i(["bold",[]]),pushS,r(12),pop,down,down,down];
+  pop,pushA,i([bold,[]]),pushS,r(12),pop,down,down,down];
 var opap = [upA,r(2),upA,r(2),upS,r(7),
   down,upA,r(2),upS,i("Cruel "),r(6),down,down,down,down];
 
@@ -54,8 +62,15 @@ describe('Compose', function() {
     assert.equal(JSON.stringify(opab),JSON.stringify(comp));
   });
 
-  it ('Invert composes to retain 1', function() {
+  it ('Self invert composes to retain 1', function() {
     var comp = compose(opb,invert(opb));
     assert.equal(JSON.stringify([r(1)]),JSON.stringify(comp));
+  });
+});
+
+describe('Invert', function() {
+  it ('Invert bold', function() {
+    var inv = invert(opb);
+    assert.equal(JSON.stringify(opbi),JSON.stringify(inv));
   });
 });
