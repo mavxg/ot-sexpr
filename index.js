@@ -68,15 +68,51 @@ unpushS.toJSON = function() { return "unpushS"; };
 
 
 //RULES
-// [upX,r(n),downX] ->[r(1)]
 // [r(a),r(b)] -> [r(a+b)]
-// [i(a),i(b)] -> [i(a+b)] //where + is concat if array.
+// [i(a),i(b)] -> [i(a.concat(b))]
 // [start,end] -> []
 // [end,start] -> []
-// [r(0)]      -> []
+// [upX,r(n),down] ->[r(1)]
 
 function _push(ops, op) {
-  //TODO (check rules first)
+  if (ops.length === 0)
+    return ops.push(op);
+
+  var t = ops[ops.length-1];
+  switch (op.op) {
+    case RETAIN:
+      if (t.op === RETAIN) {
+        ops.pop();
+        return _push(ops, r(t.n + op.n));
+      }
+      break;
+    case INSERT:
+      if (t.op === INSERT && 
+        typeof t.values === typeof op.values) {
+        ops.pop();
+        return _push(ops, i(t.values.concat(op.values)));
+      }
+      break;
+    case START:
+      if (t.op === END)
+        return ops.pop();
+      break;
+    case END:
+      if (t.op === START)
+        return ops.pop();
+      break;
+    case DOWN:
+      if (t.op === UP) {
+        ops.pop();
+        return _push(ops,r(1));
+      }
+      if (t.op === RETAIN && 
+           ops.length > 1 && 
+           ops[ops.length-2].op == UP) {
+        ops.pop();
+        return _push(ops, r(1));
+      }
+  }
   return ops.push(op);
 }
 

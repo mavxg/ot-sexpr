@@ -6,6 +6,7 @@ var ot = require('../');
 
 var compose = ot.compose;
 var transform = ot.transform;
+var invert = ot.invert;
 var opt = ot.optypes;
 
 var r = opt.retain;
@@ -51,5 +52,10 @@ describe('Compose', function() {
   it ('Can compose bold and insert', function() {
     var comp = compose(opb,opap);
     assert.equal(JSON.stringify(opab),JSON.stringify(comp));
+  });
+
+  it ('Invert composes to retain 1', function() {
+    var comp = compose(opb,invert(opb));
+    assert.equal(JSON.stringify([r(1)]),JSON.stringify(comp));
   });
 });
