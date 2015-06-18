@@ -13,10 +13,6 @@
 
 //with critical regions we also need START END
 
-var doc     = "doc";
-var p       = "p";
-var bold    = "bold";
-
 var RETAIN  = "retain";
 var INSERT  = "insert";
 var PUSH    = "push";
@@ -58,24 +54,15 @@ function d(vs) {
   return {op:DELETE, values:vs, n:vs.length};
 }
 
-var doca = [doc,[],[p,[],"Hello, World!"]];
-var docb = [doc,[],[p,[],'Hello, ',[bold,[],'World!']]];
-
-//IDEA: linearisation - might be easier to do things like compose and transform.
-//we can serialise this into a simple form and generate it pretty easily.
-var opa = [upA,r(2),upA,r(2),upS,r(7),i("Cruel "),r(6),down,down,down];
-var opb = [upA,r(2),upA,r(2),upS,r(7),
-  pop,pushA,i(["bold",[]]),pushS,r(6),down,pop,down,down];
-
-//target = compose(opa,opbp) = compose(opb,opap)
-var opab = [upA,r(2),upA,r(2),upS,r(7),
-  pop,pushA,i(["bold",[]]),pushS,i("Cruel "),r(6),pop,down,down,down]
-
-//target transformed
-var opbp = [upA,r(2),upA,r(2),upS,r(7),
-  pop,pushA,i(["bold",[]]),pushS,r(12),pop,down,down,down];
-var opap = [upA,r(2),upA,r(2),upS,r(7),
-  down,upA,r(2),upS,i("Cruel "),r(6),down,down,down,down];
+pop.toJSON = function() { return "pop"; };
+unpop.toJSON = function() { return "unpop"; };
+upA.toJSON = function() { return "upA"; };
+upS.toJSON = function() { return "upS"; };
+down.toJSON = function() { return "down"; };
+pushA.toJSON = function() { return "pushA"; };
+pushS.toJSON = function() { return "pushS"; };
+unpushA.toJSON = function() { return "unpushA"; };
+unpushS.toJSON = function() { return "unpushS"; };
 
 //we might have the pops the wrong way up... (at the moment we don't check kind)
 
@@ -387,3 +374,28 @@ function apply(d,ops) {
 
   return t[0];
 }
+
+module.exports = {
+  name: 'sexpr',
+  uri: 'https://github.com/mavxg/ot-sexpr',
+  apply: apply,
+  transform: transform,
+  compose: compose,
+  invert: invert,
+  optypes: {
+    retain  : r,
+    insert  : i,
+    "delete": d,
+    pop     : pop,
+    unpop   : unpop,
+    pushA   : pushA,
+    pushS   : pushS,
+    unpushA : unpushA,
+    unpushS : unpushS,
+    upA     : upA,
+    upS     : upS,
+    down    : down,
+    start   : start,
+    end     : end,
+  },
+};
