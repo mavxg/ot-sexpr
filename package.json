@@ -1,0 +1,32 @@
+{
+  "name": "ot-sexpr",
+  "version": "0.0.1",
+  "description": "Operational transforms on S-Expressions",
+  "main": "index.js",
+  "directories": {
+    "test": "test"
+  },
+  "scripts": {
+    "test": "mocha"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mavxg/ot-sexpr.git"
+  },
+  "keywords": [
+    "ottype",
+    "sexpr",
+    "operational",
+    "transform",
+    "collaboration"
+  ],
+  "author": "Benjamin Norrington <ben@norrington.net>",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/mavxg/ot-sexpr/issues"
+  },
+  "homepage": "https://github.com/mavxg/ot-sexpr",
+  "devDependencies": {
+    "chai": "^3.0.0"
+  }
+}
