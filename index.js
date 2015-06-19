@@ -216,9 +216,10 @@ function compose(opA, opB) {
 
   var chunk;
   var length = 0;
+  var op;
 
   for (var i = 0; i < opB.length; i++) {
-    var op = opB[i];
+    op = opB[i];
     switch (op.op) {
       case PUSH:
         chunk = peek();
@@ -303,7 +304,7 @@ function compose(opA, opB) {
               if (critical === 0) append(chunk);
               critical++;
               break;
-            case STOP:
+            case END:
               critical--;
               if (critical === 0) append(chunk);
               break;
@@ -347,7 +348,7 @@ function compose(opA, opB) {
               if (critical === 0) append(chunk);
               critical++;
               break;
-            case STOP:
+            case END:
               critical--;
               if (critical === 0) append(chunk);
               break;
@@ -361,7 +362,7 @@ function compose(opA, opB) {
         if (critical === 0) append(op);
         critical++;
         break;
-      case STOP:
+      case END:
         critical--;
         if (critical === 0) append(op);
         break;
@@ -377,7 +378,12 @@ function compose(opA, opB) {
 function transform(opA, opB, side) {
   var left = side == 'left';
   var result = [];
-  var critical = 0;
+  var critical_a = 0;
+  var critical_b = 0;
+  var level_b = 0; //includes push and pop
+  var level_a = 0; //does NOT include push and pop
+  //I don't think this is going to work as both sides could be doing
+  //push and pop.
 
   var append = makeAppend(result);
   var _funs  = makeTake(opA);
@@ -385,12 +391,101 @@ function transform(opA, opB, side) {
   var peek   = _funs.peek;
 
   var chunk;
+  var op;
+
+  //gobble opA while input
+  function gobble() {
+    while((chunk=peek()) && 
+      (chunk.op === INSERT || chunk.op === PUSH || chunk.op === POP))
+      append(take(-1));
+  }
+
+  function retain(length) {
+    while (length > 0) {
+      chunk = take(length, INSERT);
+      append(chunk);
+      switch (chunk.op) {
+        case INSERT:
+        case RETAIN:
+          if (level_a < level_b) return; 
+          if (level_a===level_b) length -= chunk.n;
+          break;
+        case DOWN:
+          level_a--;
+          if (level_a===level_b) length -= 1;
+          break;
+        case UP:
+          level_a++;
+          break;
+        case START:
+          if (critical_b > 0)
+            throw "Overlapping Critical Region";
+          critical_a++;
+          break;
+        case END:
+          critical_a--;
+          break;
+      }
+    }
+  }
+  
   
   for (var i = 0; i < opB.length; i++) {
-    var op = opB[i];
-
-    //TODO
-
+    op = opB[i];
+    switch (op.op) {
+      case PUSH:
+        if (left) gobble();
+        append(typeof op.kind === 'string' ? upS : upA);
+        break;
+      case UNPUSH:
+        //TODO: need to consume an UP ???
+        chunk = peek();
+        if (chunk && chunk.op === UP &&
+          typeof chunk.kind === typeof op.kind)
+          take(-1);
+        //OR do a level_a--
+        // and if level_a=== level_b append(r(-1))
+        break;
+      case POP:
+        if (left) gobble();
+        append(down);
+        break;
+      case UNPOP:
+        //TODO: need to consume a DOWN ???
+        chunk = peek();
+        if (chunk && chunk.op === DOWN &&
+          typeof chunk.kind === typeof op.kind)
+          take(-1);
+        //or do a level_a++
+        // and if level_a=== level_b append(r(-1))
+        break;
+      case INSERT:
+        if (left) gobble();
+        //TODO IF the levels are different we probably need to do ups and downs to make them match
+        append(r(op.n)) //skip over inserted
+        break;
+      case UP:
+        level_b++;
+        break;
+      case DOWN:
+        level_b--;
+        if (level_b === level_a) retain(1);
+        break;
+      case RETAIN:
+        retain(op.n);
+        break;
+      case DELETE:
+        //TODO
+        break;
+      case START:
+        if (critical_a > 0)
+          throw "Overlapping Critical Region";
+        critical_b++;
+        break;
+      case END:
+        critical_b--;
+        break;
+    }
   };
 
   while ((chunk = take(-1)))

@@ -93,7 +93,7 @@ describe('Transform', function() {
   });
 
   it ('Can transform bold by insert', function() {
-    var p = transform(opb,opa);
+    var p = transform(opb,opa,"left");
     assert.equal(JSON.stringify(p),JSON.stringify(opbp));
   });
 });
