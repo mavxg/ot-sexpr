@@ -72,7 +72,7 @@ unpushS.toJSON = function() { return "unpushS"; };
 // [i(a),i(b)] -> [i(a.concat(b))]
 // [start,end] -> []
 // [end,start] -> []
-// [upX,r(n),down] ->[r(1)]
+// [upA,r(n),down] ->[r(1)]
 
 function _push(ops, op) {
   if (ops.length === 0)
@@ -108,7 +108,7 @@ function _push(ops, op) {
       }
       if (t.op === RETAIN && 
            ops.length > 1 && 
-           ops[ops.length-2].op == UP) {
+           ops[ops.length-2].op === UP) {
         ops.pop();
         ops.pop();
         return _push(ops, r(1));

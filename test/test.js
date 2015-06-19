@@ -7,6 +7,7 @@ var ot = require('../');
 var compose = ot.compose;
 var transform = ot.transform;
 var invert = ot.invert;
+var apply = ot.apply;
 var opt = ot.optypes;
 
 var r = opt.retain;
@@ -40,26 +41,24 @@ var opb = [upA,r(2),upA,r(2),upS,r(7),
 var opbi = [upA,r(2),upA,r(2),upS,r(7),
   unpop,unpushA,d([bold,[]]),unpushS,r(6),unpop,down,down,down];
 
-
-//[upA,r(2),upA,r(2),upS,r(7),
-//"unpushA",r(6),"down","down","down"]
-
-//[upA,r(2),upA,r(2),upS,r(7),
-//unpop,unpushA,"unpushS","pop","pushA",{"op":"insert","values":["bold",[]],"n":2},"pushS",{"op":"retain","n":4},"unpop","down","down","down",{"op":"retain","n":2},"pop","down","down","down"]
-
-
+//[upA,r(2),upA,r(3),upA,r(2),upS,i("Cruel "),down,r(6),down,down,down]
+//[upA,r(2),upA,r(3),upA,r(2),upS,i("Cruel "),r(6),down,down,down,down]
 
 //target = compose(opa,opbp) = compose(opb,opap)
 var opab = [upA,r(2),upA,r(2),upS,r(7),
   pop,pushA,i([bold,[]]),pushS,i("Cruel "),r(6),pop,down,down,down]
 
+//[upA,r(2),upA,r(2),upS,r(7),                              pop,pushA,i([bold,[]]),pushS,i("Cruel ")                                      ,r(6),pop,down,down,down]
+//[upA,r(2),upA,r(2),upS,r(1),upA,r(2),upS,i("Cruel "),r(4),pop,pushA,i([bold,[]]),down,down,down,down,pushS,r(6),pop,down,down,down]
 
 //target transformed
 var opbp = [upA,r(2),upA,r(2),upS,r(7),
   pop,pushA,i([bold,[]]),pushS,r(12),pop,down,down,down];
-var opap = [upA,r(2),upA,r(2),upS,r(7),
-  down,upA,r(2),upS,i("Cruel "),r(6),down,down,down,down];
+var opap = [upA,r(2),upA,r(3),
+  upA,r(2),upS,i("Cruel "),r(6),down,down,down,down];
 
+//console.log(apply(apply(doca,opa),opbp))
+//console.log(apply(apply(doca,opb),opap))
 
 describe('Compose', function() {
   it ('Can compose insert and bold', function() {
