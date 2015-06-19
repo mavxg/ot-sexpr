@@ -84,3 +84,16 @@ describe('Invert', function() {
     assert.equal(JSON.stringify(opbi),JSON.stringify(inv));
   });
 });
+
+
+describe('Transform', function() {
+  it ('Can transform insert by bold', function() {
+    var p = transform(opa,opb);
+    assert.equal(JSON.stringify(p),JSON.stringify(opap));
+  });
+
+  it ('Can transform bold by insert', function() {
+    var p = transform(opb,opa);
+    assert.equal(JSON.stringify(p),JSON.stringify(opbp));
+  });
+});
