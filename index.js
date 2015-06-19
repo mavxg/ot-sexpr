@@ -110,6 +110,7 @@ function _push(ops, op) {
            ops.length > 1 && 
            ops[ops.length-2].op == UP) {
         ops.pop();
+        ops.pop();
         return _push(ops, r(1));
       }
   }
@@ -220,9 +221,35 @@ function compose(opA, opB) {
     var op = opB[i];
     switch (op.op) {
       case PUSH:
-      case POP:
+        chunk = peek();
+        if (chunk && (chunk.op === UNPUSH &&
+          typeof chunk.kind ===  typeof op.kind))
+          take(-1);
+        else
+          append(op);
+        break;
       case UNPUSH:
+        chunk = peek();
+        if (chunk && (chunk.op === PUSH &&
+          typeof chunk.kind === typeof op.kind))
+          take(-1)
+        else
+          append(op);
+        break;
+      case POP:
+        chunk = peek();
+        if (chunk && chunk.op === UNPOP)
+          take(-1);
+        else
+          append(op);
+        break;
       case UNPOP:
+        chunk = peek();
+        if (chunk && chunk.op === POP)
+          take(-1);
+        else
+          append(op);
+        break;
       case INSERT:
         append(op);
         break;
@@ -258,6 +285,7 @@ function compose(opA, opB) {
             case INSERT:
             case RETAIN:
               append(chunk);
+              //TODO: only if at the same level
               length -= chunk.n;
               break;
             case DOWN:
@@ -287,8 +315,47 @@ function compose(opA, opB) {
         break;
       case DELETE:
         length = op.n;
-        //TODO
-        // peek loop at end to gobble all the pushes and pops.
+        var s = 0;
+        while (length > 0) {
+          chunk = take(length, DELETE);
+          switch (chunk.op) {
+            case INSERT:
+              //TODO: only if at same level
+              length -= chunk.n;
+              s += chunk.n;
+              break;
+            case RETAIN:
+              //TODO: only if at same level
+              append(_slice(op,s,s+chunk.n));
+              length -= chunk.n;
+              s += chunk.n;
+              break;
+            case DOWN:
+            case POP:
+              level_a--;
+              if (level_a===level_b) {
+                length -= 1;
+                append(_slice(op,s,s+1));
+                s += 1
+              }
+              break;
+            case UP:
+            case PUSH:
+              level_b++;
+              break;
+            case START:
+              if (critical === 0) append(chunk);
+              critical++;
+              break;
+            case STOP:
+              critical--;
+              if (critical === 0) append(chunk);
+              break;
+            default:
+              append(chunk);
+              break;
+          }
+        }
         break;
       case START:
         if (critical === 0) append(op);
