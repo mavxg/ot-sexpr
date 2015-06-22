@@ -27,8 +27,8 @@ var doc     = "doc";
 var p       = "p";
 var bold    = "bold";
 
-var doca = [doc,[],[p,[],"Hello, World!"]];
-var docb = [doc,[],[p,[],'Hello, ',[bold,[],'World!']]];
+var doca = [doc,["title", "Tests"],[p,[],"Hello, World!"]];
+var docb = [doc,["title", "Tests"],[p,[],'Hello, ',[bold,[],'World!']]];
 
 //insert text
 var opa = [upA,r(2),upA,r(2),upS,r(7),i("Cruel "),r(6),down,down,down];
@@ -42,6 +42,9 @@ var opc = [upA,r(1),upA,i(["href","qubic.io"]),down,r(1),down];
 
 //Unpush test
 var opu = [upA,r(2),unpushA,r(3),unpop,down];
+
+//non overlapping unpush test
+var opuu = [upA,r(1),unpushA,r(2),unpop,r(1),down];
 
 //invert targets
 var opbi = [upA,r(2),upA,r(2),upS,r(7),
@@ -66,7 +69,8 @@ var opap = [upA,r(2),upA,r(3),
 //target transformed by opu
 //var opbpu = [upA,r(2),upA,r(2),upS,r(7),
 //  pop,pushA,i([bold,[]]),pushS,r(12),pop,down,down,down];
-var opapu = [upA,r(4),upS,r(7),i("Cruel "),r(6),down,down];
+var opapu  = [upA,r(4),upS,r(7),i("Cruel "),r(6),down,down];
+var opapuu = [upA,r(3),upA,r(2),upS,r(7),i("Cruel "),r(6),down,down,down];
 
 //console.log(apply(apply(doca,opa),opbp))
 //console.log(apply(apply(doca,opb),opap))
@@ -110,6 +114,11 @@ describe('Transform', function() {
   it ('Can transform with unpush/pop', function() {
     var p = transform(opa,opu);
     assert.equal(JSON.stringify(p),JSON.stringify(opapu));
+  });
+
+  it ('Can transform with non overlapping unpush/pop', function() {
+    var p = transform(opa,opuu);
+    assert.equal(JSON.stringify(p),JSON.stringify(opapuu));
   });
 
   it ('Subtree inserts cause identity transform', function() {
