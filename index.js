@@ -421,6 +421,7 @@ function transform(opA, opB, side) {
       append(chunk);
       switch (chunk.op) {
         case INSERT:
+          break;
         case RETAIN:
           if (level_a < level_b) return; 
           if (level_a===level_b) length -= chunk.n;
