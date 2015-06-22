@@ -390,10 +390,10 @@ function transform(opA, opB, side) {
   var result = [];
   var critical_a = 0;
   var critical_b = 0;
-  var level_b = 0; //includes push and pop
+  var level_b = 0; //does NOT include push and pop
   var level_a = 0; //does NOT include push and pop
-  //I don't think this is going to work as both sides could be doing
-  //push and pop.
+  var level_bpp = 0; //push and pop
+  var level_app = 0; //push and pop
 
   var append = makeAppend(result);
   var _funs  = makeTake(opA);
@@ -406,8 +406,13 @@ function transform(opA, opB, side) {
   //gobble opA while input
   function gobble() {
     while((chunk=peek()) && 
-      (chunk.op === INSERT || chunk.op === PUSH || chunk.op === POP))
+      (chunk.op === INSERT || chunk.op === PUSH || chunk.op === POP)) {
       append(take(-1));
+      if (chunk.op === PUSH)
+        level_app++;
+      else if (chunk.op === POP)
+        level_app--;
+    }
   }
 
   function retain(length) {
@@ -470,16 +475,25 @@ function transform(opA, opB, side) {
         // and if level_a=== level_b append(r(-1))
         break;
       case INSERT:
-        if (left) gobble();
-        //TODO IF the levels are different we probably need to do ups and downs to make them match
-        append(r(op.n)) //skip over inserted
+        if (level_b === level_a) {
+          if (left) gobble();
+          append(r(op.n)) //skip over inserted
+        }
         break;
       case UP:
         level_b++;
+        chunk = peek();
+        if (chunk && chunk.op === UP) {
+          append(take(-1));
+          level_a++;
+        }
         break;
       case DOWN:
         level_b--;
-        if (level_b === level_a) retain(1);
+        if (chunk && chunk.op === DOWN) {
+          append(take(-1));
+          level_a--;
+        } else if (level_b === level_a) retain(1);
         break;
       case RETAIN:
         retain(op.n);
