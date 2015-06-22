@@ -218,6 +218,48 @@ function compose(opA, opB) {
   var length = 0;
   var op;
 
+  function retain(length) {
+    if (level_b > level_a) {
+      append(r(length));
+      return;
+    }
+    while (length > 0) {
+      chunk = take(length, DELETE);
+      if (chunk === null) throw "Retain failed for this compose"
+      switch (chunk.op) {
+        case INSERT:
+        case RETAIN:
+          append(chunk);
+          if (level_a === level_b)
+            length -= chunk.n;
+          break;
+        case DOWN:
+        case POP:
+          level_a--;
+          if (level_a===level_b)
+            length -= 1;
+          append(chunk);
+          break;
+        case UP:
+        case PUSH:
+          level_a++;
+          append(chunk);
+          break;
+        case START:
+          if (critical === 0) append(chunk);
+          critical++;
+          break;
+        case END:
+          critical--;
+          if (critical === 0) append(chunk);
+          break;
+        default:
+          append(chunk);
+          break;
+      }
+    }
+  }
+
   for (var i = 0; i < opB.length; i++) {
     op = opB[i];
     switch (op.op) {
@@ -258,7 +300,7 @@ function compose(opA, opB) {
         level_b++;
         chunk = peek();
         if (chunk && (chunk.op === UP || chunk.op === PUSH)) {
-          append(take(-1))
+          append(take(-1));
           level_a++;
         } else {
           append(op);
@@ -268,68 +310,36 @@ function compose(opA, opB) {
         level_b--;
         chunk = peek();
         if (chunk && (chunk.op === DOWN || chunk.op === POP)) {
-          append(take(-1))
+          append(take(-1));
           level_a--;
-          break;
         } else {
           append(op);
-          if (level_b === level_a)
-            op = r(1); //fall through to retain !!!
-          else
-            break;
+          retain(1);
         }
+        break;
       case RETAIN:
         length = op.n;
-        while (length > 0) {
-          chunk = take(length, DELETE);
-          switch (chunk.op) {
-            case INSERT:
-            case RETAIN:
-              append(chunk);
-              //TODO: only if at the same level
-              length -= chunk.n;
-              break;
-            case DOWN:
-            case POP:
-              level_a--;
-              if (level_a===level_b) length -= 1;
-              append(chunk);
-              break;
-            case UP:
-            case PUSH:
-              level_b++;
-              append(chunk);
-              break;
-            case START:
-              if (critical === 0) append(chunk);
-              critical++;
-              break;
-            case END:
-              critical--;
-              if (critical === 0) append(chunk);
-              break;
-            default:
-              append(chunk);
-              break;
-          }
-        }
+        retain(op.n);
         break;
       case DELETE:
         length = op.n;
         var s = 0;
         while (length > 0) {
           chunk = take(length, DELETE);
+          if (chunk === null) throw "DELETE failed for this compose"
           switch (chunk.op) {
             case INSERT:
-              //TODO: only if at same level
-              length -= chunk.n;
-              s += chunk.n;
+              if (level_a===level_b) {
+                length -= chunk.n;
+                s += chunk.n;
+              }
               break;
             case RETAIN:
-              //TODO: only if at same level
-              append(_slice(op,s,s+chunk.n));
-              length -= chunk.n;
-              s += chunk.n;
+              if (level_a===level_b) {
+                append(_slice(op,s,s+chunk.n));
+                length -= chunk.n;
+                s += chunk.n;
+              }
               break;
             case DOWN:
             case POP:
@@ -342,7 +352,7 @@ function compose(opA, opB) {
               break;
             case UP:
             case PUSH:
-              level_b++;
+              level_a++;
               break;
             case START:
               if (critical === 0) append(chunk);
