@@ -1,8 +1,8 @@
 # TODO
 
-[] transformCursor
-[] insert at path
-[] set at path (replace)
+* [ ] transformCursor
+* [ ] insert at path
+* [ ] set at path (replace)
 
 
 # IDEAS
