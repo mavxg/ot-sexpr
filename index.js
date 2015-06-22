@@ -46,11 +46,11 @@ function r(n) {
   return {op:RETAIN, n:n};
 }
 
-function i(vs) {
+function _i(vs) {
   return {op:INSERT, values:vs, n:vs.length};
 }
 
-function d(vs) {
+function _d(vs) {
   return {op:DELETE, values:vs, n:vs.length};
 }
 
@@ -133,6 +133,91 @@ when we compose it is the unions of the critical regions.
 
 */
 
+
+/*
+takes a source and target document and returns operations to modify
+the source document into the target document.
+
+Note: assumes simple operations where objects stay at the same level
+within the tree.
+
+takes an optional path and only does the diff at that path.
+takes an optional critical bool to wrap the path in critical tags
+
+Note, this assumes that strings that differ differ in entirety
+
+*/
+
+function diff(source, target, path, critical) {
+  var result = [];
+  var pre = _diff(source, target, path, critical);
+  function append(op) { _push(result, op); }
+  pre.forEach(append);
+  return result;
+}
+
+function _diff(source, target, path, critical) {
+  var result = [];
+  if (path && path.length > 0) {
+    var offset = path[0]
+    result.push(typeof source[0] === 'string' ? upS : upA);
+    result.push(r(offset));
+    result = result.concat(diff(source[offset], target[offset], path.slice(1)));
+    result.push(r(source[offset].length - offset - 1));
+    result.push(down);
+    return result;
+  }
+  if (source === target) {
+    result.push(r(1));
+    return;
+  }
+
+  if (critical) result.push(start); //start critical region
+  //do an actual diff
+  if (Array.isArray(source) && Array.isArray(target)) {
+    _push(result,upA);
+    var i = 0;
+    var j = 0;
+    var rs = source.length;
+    var ts = target.length;
+    while (i < source.length && j < target.length) {
+      var s = source[i];
+      var t = target[j];
+      if (s === t) {
+        result.push(r(1));
+        i++;
+        j++;
+        rs--;
+        ts--;
+      } else if (rs === ts) {
+        result = result.concat(diff(s,t));
+        rs--;
+        ts--;
+        i++;
+        j++;
+      } else if (rs > ts) {
+        result.push(_d([s]));
+        rs--;
+        i++;
+      } else {
+        result.push(_i([t]));
+        ts--;
+        j++;
+      }
+    }
+    if (rs > 0)
+      result.push(_d(source.slice(i)));
+    else if (ts > 0)
+      result.push(_i(target.slice(j)));
+    _push(result, down);
+  } else {
+    result.push(_d([source]));
+    result.push(_i([target]));
+  }
+  if (critical) result.push(end); //end critical region
+  return result;
+}
+
 function invert(ops) {
   function invertOp(op) {
     switch (op.op) {
@@ -160,8 +245,8 @@ function makeAppend(result) {
 
 function _slice(op, s, e) {
   switch (op.op) {
-    case INSERT: return i(op.values.slice(s,e));
-    case DELETE: return d(op.values.slice(s,e));
+    case INSERT: return _i(op.values.slice(s,e));
+    case DELETE: return _d(op.values.slice(s,e));
     case RETAIN: return r((e === undefined ? op.n : e) - s);
     default:     return op;
   }
@@ -656,10 +741,11 @@ module.exports = {
   transform: transform,
   compose: compose,
   invert: invert,
+  diff: diff,
   optypes: {
     retain  : r,
-    insert  : i,
-    "delete": d,
+    insert  : _i,
+    "delete": _d,
     pop     : pop,
     unpop   : unpop,
     pushA   : pushA,
