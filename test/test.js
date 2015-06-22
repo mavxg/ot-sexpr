@@ -31,6 +31,7 @@ var doca  = [doc,["title", "Tests"],[p,[],"Hello, World!"]];
 var docb  = [doc,["title", "Tests"],[p,[],'Hello, ',[bold,[],'World!']]];
 var docd  = [doc,["title", "Tests"],[p,[],"Hello"]];
 var docdi = [doc,["title", "Tests"],[p,[],"Hello, Barney"]];
+var docadi = [doc,["title", "Tests"],[p,[],"Hello, Cruel Barney"]];
 
 //insert text
 var opa = [upA,r(2),upA,r(2),upS,r(7),i("Cruel "),r(6),down,down,down];
@@ -154,5 +155,17 @@ describe('Transform', function() {
     var bc = transform(opb,opc);
     assert.equal(JSON.stringify(ac),JSON.stringify(opa));
     assert.equal(JSON.stringify(bc),JSON.stringify(opb));
+  });
+
+  it ('Can transform insert by delete', function() {
+    var p = transform(opa,opdi);
+    var d = apply(apply(doca,opa),p);
+    assert.equal(JSON.stringify(docadi),JSON.stringify(d));
+  });
+
+  it ('Can transform delete by insert', function() {
+    var p = transform(opdi,opa,'left');
+    var d = apply(apply(doca,opdi),p);
+    assert.equal(JSON.stringify(docadi),JSON.stringify(d));
   });
 });
