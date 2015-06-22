@@ -30,8 +30,8 @@ var bold    = "bold";
 var doca  = [doc,["title", "Tests"],[p,[],"Hello, World!"]];
 var docb  = [doc,["title", "Tests"],[p,[],'Hello, ',[bold,[],'World!']]];
 var docd  = [doc,["title", "Tests"],[p,[],"Hello"]];
-var docdi = [doc,["title", "Tests"],[p,[],"Hello, Barney"]];
-var docadi = [doc,["title", "Tests"],[p,[],"Hello, Cruel Barney"]];
+var docdi = [doc,["title", "Tests"],[p,[],"Hello, Barnabus"]];
+var docadi = [doc,["title", "Tests"],[p,[],"Hello, Cruel Barnabus"]];
 
 //insert text
 var opa = [upA,r(2),upA,r(2),upS,r(7),i("Cruel "),r(6),down,down,down];
@@ -53,7 +53,7 @@ var opuu = [upA,r(1),unpushA,r(2),unpop,r(1),down];
 var opup = [upA,r(2),unpushA,r(1),pushA,r(2),down,down];
 
 //delete insert
-var opdi = [upA,r(2),upA,r(2),upS,r(7),d("World!"),i("Barney"),down,down,down];
+var opdi = [upA,r(2),upA,r(2),upS,r(7),d("World!"),i("Barnabus"),down,down,down];
 //delete
 var opd = [upA,r(2),upA,r(2),upS,r(5),d(", World!"),down,down,down];
 
@@ -159,13 +159,13 @@ describe('Transform', function() {
 
   it ('Can transform insert by delete', function() {
     var p = transform(opa,opdi);
-    var d = apply(apply(doca,opa),p);
+    var d = apply(apply(doca,opdi),p);
     assert.equal(JSON.stringify(docadi),JSON.stringify(d));
   });
 
   it ('Can transform delete by insert', function() {
     var p = transform(opdi,opa,'left');
-    var d = apply(apply(doca,opdi),p);
+    var d = apply(apply(doca,opa),p);
     assert.equal(JSON.stringify(docadi),JSON.stringify(d));
   });
 });

@@ -415,6 +415,41 @@ function transform(opA, opB, side) {
     }
   }
 
+  function del(op) {
+    var length = op.n;
+    if (level_b > level_a) {
+      return;
+    }
+    while (length > 0) {
+      chunk = take(length, INSERT);
+      switch (chunk.op) {
+        case INSERT:
+          append(chunk);
+          break;
+        case DELETE:
+        case RETAIN:
+          if (level_a < level_b) return;
+          if (level_a===level_b) length -= chunk.n;
+          break;
+        case DOWN:
+          level_a--;
+          if (level_a===level_b) length -= 1;
+          break;
+        case UP:
+          level_a++;
+          break;
+        case START:
+          if (critical_b > 0)
+            throw "Overlapping Critical Region";
+          critical_a++;
+          break;
+        case END:
+          critical_a--;
+          break;
+      }
+    }
+  }
+
   function retain(length) {
     if (level_b > level_a) {
       append(r(length));
@@ -427,6 +462,7 @@ function transform(opA, opB, side) {
         case INSERT:
           break;
         case RETAIN:
+        case DELETE:
           if (level_a < level_b) return; 
           if (level_a===level_b) length -= chunk.n;
           break;
@@ -515,7 +551,7 @@ function transform(opA, opB, side) {
         retain(op.n);
         break;
       case DELETE:
-        //TODO
+        del(op);
         break;
       case START:
         if (critical_a > 0)
