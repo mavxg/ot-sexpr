@@ -37,6 +37,9 @@ var opb = [upA,r(2),upA,r(2),upS,r(7),
   pop,pushA,i([bold,[]]),pushS,r(6),pop,down,down,down];
 //Note: the list inserted after bold is atomic.
 
+//should not modify a or b under transform
+var opc = [upA,r(1),upA,i(["href","qubic.io"]),down,r(1),down];
+
 //invert targets
 var opbi = [upA,r(2),upA,r(2),upS,r(7),
   unpop,unpushA,d([bold,[]]),unpushS,r(6),unpop,down,down,down];
@@ -94,5 +97,12 @@ describe('Transform', function() {
   it ('Can transform bold by insert', function() {
     var p = transform(opb,opa,"left");
     assert.equal(JSON.stringify(p),JSON.stringify(opbp));
+  });
+
+  it ('Subtree inserts cause identity transform', function() {
+    var ac = transform(opa,opc);
+    var bc = transform(opb,opc);
+    assert.equal(JSON.stringify(ac),JSON.stringify(opa));
+    assert.equal(JSON.stringify(bc),JSON.stringify(opb));
   });
 });
