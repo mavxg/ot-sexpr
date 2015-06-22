@@ -27,8 +27,10 @@ var doc     = "doc";
 var p       = "p";
 var bold    = "bold";
 
-var doca = [doc,["title", "Tests"],[p,[],"Hello, World!"]];
-var docb = [doc,["title", "Tests"],[p,[],'Hello, ',[bold,[],'World!']]];
+var doca  = [doc,["title", "Tests"],[p,[],"Hello, World!"]];
+var docb  = [doc,["title", "Tests"],[p,[],'Hello, ',[bold,[],'World!']]];
+var docd  = [doc,["title", "Tests"],[p,[],"Hello"]];
+var docdi = [doc,["title", "Tests"],[p,[],"Hello, Barney"]];
 
 //insert text
 var opa = [upA,r(2),upA,r(2),upS,r(7),i("Cruel "),r(6),down,down,down];
@@ -48,6 +50,11 @@ var opuu = [upA,r(1),unpushA,r(2),unpop,r(1),down];
 
 //half overlapping unpush push
 var opup = [upA,r(2),unpushA,r(1),pushA,r(2),down,down];
+
+//delete insert
+var opdi = [upA,r(2),upA,r(2),upS,r(7),d("World!"),i("Barney"),down,down,down];
+//delete
+var opd = [upA,r(2),upA,r(2),upS,r(5),d(", World!"),down,down,down];
 
 //invert targets
 var opbi = [upA,r(2),upA,r(2),upS,r(7),
@@ -100,6 +107,18 @@ describe('Invert', function() {
   it ('Invert bold', function() {
     var inv = invert(opb);
     assert.equal(JSON.stringify(opbi),JSON.stringify(inv));
+  });
+});
+
+describe('Delete', function() {
+  it ('Can delete characters', function() {
+    var d = apply(doca, opd);
+    assert.equal(JSON.stringify(d),JSON.stringify(docd));
+  });
+
+  it ('Can replace characters', function() {
+    var d = apply(doca, opdi);
+    assert.equal(JSON.stringify(d),JSON.stringify(docdi));
   });
 });
 

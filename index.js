@@ -479,7 +479,6 @@ function transform(opA, opB, side) {
         append(down);
         break;
       case UNPOP:
-        //TODO: need to consume a DOWN ???
         chunk = peek();
         if (chunk && chunk.op === DOWN &&
           typeof chunk.kind === typeof op.kind) {
