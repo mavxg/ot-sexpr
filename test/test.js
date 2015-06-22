@@ -46,6 +46,9 @@ var opu = [upA,r(2),unpushA,r(3),unpop,down];
 //non overlapping unpush test
 var opuu = [upA,r(1),unpushA,r(2),unpop,r(1),down];
 
+//half overlapping unpush push
+var opup = [upA,r(2),unpushA,r(1),pushA,r(2),down,down];
+
 //invert targets
 var opbi = [upA,r(2),upA,r(2),upS,r(7),
   unpop,unpushA,d([bold,[]]),unpushS,r(6),unpop,down,down,down];
@@ -71,6 +74,7 @@ var opap = [upA,r(2),upA,r(3),
 //  pop,pushA,i([bold,[]]),pushS,r(12),pop,down,down,down];
 var opapu  = [upA,r(4),upS,r(7),i("Cruel "),r(6),down,down];
 var opapuu = [upA,r(3),upA,r(2),upS,r(7),i("Cruel "),r(6),down,down,down];
+var opapup = [upA,r(3),upA,r(1),upS,r(7),i("Cruel "),r(6),down,down,down];
 
 //console.log(apply(apply(doca,opa),opbp))
 //console.log(apply(apply(doca,opb),opap))
@@ -119,6 +123,11 @@ describe('Transform', function() {
   it ('Can transform with non overlapping unpush/pop', function() {
     var p = transform(opa,opuu);
     assert.equal(JSON.stringify(p),JSON.stringify(opapuu));
+  });
+
+  it ('Can transform with half overlapping unpush/pop', function() {
+    var p = transform(opa,opup);
+    assert.equal(JSON.stringify(p),JSON.stringify(opapup));
   });
 
   it ('Subtree inserts cause identity transform', function() {
