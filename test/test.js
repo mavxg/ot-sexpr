@@ -40,6 +40,9 @@ var opb = [upA,r(2),upA,r(2),upS,r(7),
 //should not modify a or b under transform
 var opc = [upA,r(1),upA,i(["href","qubic.io"]),down,r(1),down];
 
+//Unpush test
+var opu = [upA,r(2),unpushA,r(3),unpop,down];
+
 //invert targets
 var opbi = [upA,r(2),upA,r(2),upS,r(7),
   unpop,unpushA,d([bold,[]]),unpushS,r(6),unpop,down,down,down];
@@ -59,6 +62,11 @@ var opbp = [upA,r(2),upA,r(2),upS,r(7),
   pop,pushA,i([bold,[]]),pushS,r(12),pop,down,down,down];
 var opap = [upA,r(2),upA,r(3),
   upA,r(2),upS,i("Cruel "),r(6),down,down,down,down];
+
+//target transformed by opu
+//var opbpu = [upA,r(2),upA,r(2),upS,r(7),
+//  pop,pushA,i([bold,[]]),pushS,r(12),pop,down,down,down];
+var opapu = [upA,r(4),upS,r(7),i("Cruel "),r(6),down,down];
 
 //console.log(apply(apply(doca,opa),opbp))
 //console.log(apply(apply(doca,opb),opap))
@@ -97,6 +105,11 @@ describe('Transform', function() {
   it ('Can transform bold by insert', function() {
     var p = transform(opb,opa,"left");
     assert.equal(JSON.stringify(p),JSON.stringify(opbp));
+  });
+
+  it ('Can transform with unpush/pop', function() {
+    var p = transform(opa,opu);
+    assert.equal(JSON.stringify(p),JSON.stringify(opapu));
   });
 
   it ('Subtree inserts cause identity transform', function() {
