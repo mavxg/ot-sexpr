@@ -416,6 +416,10 @@ function transform(opA, opB, side) {
   }
 
   function retain(length) {
+    if (level_b > level_a) {
+      append(r(length));
+      return;
+    }
     while (length > 0) {
       chunk = take(length, INSERT);
       append(chunk);
@@ -445,20 +449,28 @@ function transform(opA, opB, side) {
     }
   }
   
+  var level_x = 0;
   
   for (var i = 0; i < opB.length; i++) {
     op = opB[i];
     switch (op.op) {
       case PUSH:
-        if (left) gobble();
-        append(typeof op.kind === 'string' ? upS : upA);
+        if (level_a === level_b) {
+          if (left) gobble();
+          append(typeof op.kind === 'string' ? upS : upA);
+        } else {
+          throw "Unsupported transform: PUSH different levels"
+        }
         break;
       case UNPUSH:
-        //TODO: need to consume an UP ???
+        if (left) gobble();
         chunk = peek();
         if (chunk && chunk.op === UP &&
-          typeof chunk.kind === typeof op.kind)
+          typeof chunk.kind === typeof op.kind) {
           take(-1);
+        } else {
+          level_a--;
+        }
         //OR do a level_a--
         // and if level_a=== level_b append(r(-1))
         break;
@@ -470,8 +482,12 @@ function transform(opA, opB, side) {
         //TODO: need to consume a DOWN ???
         chunk = peek();
         if (chunk && chunk.op === DOWN &&
-          typeof chunk.kind === typeof op.kind)
+          typeof chunk.kind === typeof op.kind) {
           take(-1);
+        } else {
+          level_a++;
+          if (level_a===level_b) append(r(-1))
+        }
         //or do a level_a++
         // and if level_a=== level_b append(r(-1))
         break;
