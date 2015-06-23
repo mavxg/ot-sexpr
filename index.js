@@ -151,6 +151,7 @@ Note, this assumes that strings that differ differ in entirety
 function diff(source, target, path, critical) {
   var result = [];
   var pre = _diff(source, target, path, critical);
+  //cleanup the results.
   function append(op) { _push(result, op); }
   pre.forEach(append);
   return result;
@@ -175,7 +176,7 @@ function _diff(source, target, path, critical) {
   if (critical) result.push(start); //start critical region
   //do an actual diff
   if (Array.isArray(source) && Array.isArray(target)) {
-    _push(result,upA);
+    result.push(upA);
     var i = 0;
     var j = 0;
     var rs = source.length;
@@ -209,7 +210,7 @@ function _diff(source, target, path, critical) {
       result.push(_d(source.slice(i)));
     else if (ts > 0)
       result.push(_i(target.slice(j)));
-    _push(result, down);
+    result.push(down);
   } else {
     result.push(_d([source]));
     result.push(_i([target]));
