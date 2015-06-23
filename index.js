@@ -66,6 +66,112 @@ unpushS.toJSON = function() { return "unpushS"; };
 
 //we might have the pops the wrong way up... (at the moment we don't check kind)
 
+//path within s-expr
+function Point(path) {
+  this.path = path;
+  this.hash = path.join('.');
+}
+Point.prototype.equals = function(other) {
+  return this.hash === other.hash;
+};
+
+Point.min = function(a, b) {
+  return a.hash < b.hash ? a : b;
+};
+Point.max = function(a, b) {
+  return a.hash >= b.hash ? a : b;
+};
+
+//pair of points
+function Region(focus, anchor) {
+  this.focus = focus;
+  this.anchor = focus || anchor;
+  //can also have xpos.
+}
+Region.prototype.empty = function() {
+  return this.focus === this.anchor || this.focus.equals(this.anchor);
+};
+Region.prototype.begin = function() {
+  return (this.focus.hash < this.anchor.hash) ? this.focus : this.anchor;
+};
+Region.prototype.end = function() {
+  return (this.focus.hash > this.anchor.hash) ? this.focus : this.anchor;
+};
+//Region.prototype.size = function() {} //what would this be in an sexpr
+//return region covering both regions
+Region.prototype.cover = function(region) {
+  var beg = Point.min(region.begin(), this.begin());
+  var end = Point.max(region.end(), this.end());
+  if (region.focus.hash < region.anchor.hash)
+    return new Region(beg, end);
+  return new Region(end, beg);
+};
+Region.prototype.intersection = function(region) {
+  var beg = Point.max(region.begin(), this.begin());
+  var end = Point.min(region.end(), this.end());
+  if (beg > end) return null;
+  return new Region(end, beg);
+};
+Region.prototype.intersects = function(region) {
+  return (this.end().hash >= region.begin().hash && this.begin().hash <= region.end().hash);
+};
+Region.prototype.contains = function(region) {
+  if (region.path !== undefined) { //actually a point
+    var point = region;
+    return (this.begin().hash <= point.hash && this.end().hash >= point.hash)
+  }
+  return (this.begin().hash <= region.begin().hash && this.end().hash >= region.end().hash)
+};
+
+
+//set of non overlapping regions
+function Selection(regions) {
+  this.regions = regions || [];
+}
+Selection.prototype.clear = function() {
+  return new Selection();
+};
+Selection.prototype.add = function(region) {
+  var beg = region.begin();
+  var end = region.end();
+  var regions = this.regions;
+  var l = regions.length;
+  var i = 0;
+  var r;
+  var c = region;
+  var ret = [];
+  //befores
+  while (i < l) {
+    r = regions[i];
+    if (r.end() >= beg) break;
+    ret.push(r);
+    i++;
+  };
+  //intersectors
+  while (i < l) {
+    r = regions[i];
+    if (r.begin() > end) break;
+    c = r.intersection(c);
+    i++;
+  };
+  ret.push(c);
+  //afters
+  while (i < l) {
+    ret.push(regions[i]);
+    i++;
+  };
+  return new Selection(ret);
+};
+Selection.prototype.add_all = function(regions) {
+  regions.forEach(this.add, this);
+};
+Selection.prototype.subtract = function(region) {
+  //TODO
+};
+Selection.prototype.contains = function(region) {
+  //TODO
+};
+
 
 //RULES
 // [r(a),r(b)] -> [r(a+b)]
