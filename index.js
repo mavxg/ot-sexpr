@@ -223,8 +223,8 @@ function invert(ops) {
   function invertOp(op) {
     switch (op.op) {
       case RETAIN: return op;
-      case INSERT: return d(op.values);
-      case DELETE: return i(op.values);
+      case INSERT: return _d(op.values);
+      case DELETE: return _i(op.values);
       case POP:    return unpop;
       case UNPOP:  return pop;
       case PUSH:
@@ -656,6 +656,17 @@ function transform(opA, opB, side) {
   return result;
 }
 
+var uuid_seq = 0;
+function uuid() {
+  return uuid_seq++;
+}
+
+function identify(node) {
+  if (!Array.isArray(node)) return;
+  if (node.id === undefined) node.id = uuid();
+  node.forEach(identify);
+}
+
 function apply(d,ops) {
   //stack and t(op) for traversing output documrny
   var stack = []
@@ -665,11 +676,17 @@ function apply(d,ops) {
   var dp = [d]; //wrap the doc so we can do [r(1)] and change nothing.
   var o = 0;
 
+  //ensure document is identified (assumes that if doc is identified then children are too)
+  if (d.id === undefined) identify(d);
+
   function append(vals) {
     if (typeof t === 'string') {
       t += vals
     } else {
+      var id = t.id;
+      identify(vals)
       t = t.concat(vals);
+      t.id = id;
     }
   }
 
@@ -685,7 +702,12 @@ function apply(d,ops) {
         break;
       case PUSH:
         stack.push(t);
-        t = (typeof op.kind === 'string') ? "" : [];
+        if (typeof op.kind === 'string') {
+          t = ""
+        } else {
+          t = [];
+          t.id = uuid();
+        }
         break;
       case POP:
         var temp = t;
@@ -715,6 +737,8 @@ function apply(d,ops) {
         docStack.push({o:o, dp:dp});
         dp = dp[o];
         o = 0;
+        //maintain ids
+        t.id = dp.id;
         break;
       case DOWN:
         //move shallower in the doc
@@ -742,6 +766,7 @@ module.exports = {
   transform: transform,
   compose: compose,
   invert: invert,
+  identify: identify,
   diff: diff,
   optypes: {
     retain  : r,
