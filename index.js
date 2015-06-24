@@ -215,7 +215,10 @@ Selection.prototype.subtract = function(region) {
   return new Selection(ret);
 };
 Selection.prototype.contains = function(region) {
-  //TODO
+  for (var i = this.regions.length - 1; i >= 0; i--) {
+    if (this.regions[i].contains(region)) return true;
+  };
+  return false;
 };
 
 
