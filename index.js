@@ -923,6 +923,9 @@ module.exports = {
   invert: invert,
   identify: identify,
   diff: diff,
+  Point: Point,
+  Region: Region,
+  Selection: Selection,
   optypes: {
     retain  : r,
     insert  : _i,
