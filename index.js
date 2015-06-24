@@ -182,7 +182,7 @@ Selection.prototype.subtract = function(region) {
   //befores
   while (i < l) {
     r = regions[i];
-    if (r.end() > beg) break;
+    if (r.end().hash > beg.hash) break;
     ret.push(r);
     i++;
   };
