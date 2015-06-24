@@ -71,6 +71,9 @@ function Point(path) {
   this.path = path;
   this.hash = path.join('.');
 }
+Point.prototype.toJSON = function() {
+  return {path:this.hash};
+}
 Point.prototype.equals = function(other) {
   return this.hash === other.hash;
 };
@@ -87,7 +90,7 @@ Point.max = function(a, b) {
 //pair of points (xpos optional)
 function Region(focus, anchor, xpos) {
   this.focus = focus;
-  this.anchor = focus || anchor;
+  this.anchor = anchor || focus;
   this.xpos = xpos === undefined ? false : xpos;
 }
 Region.prototype.empty = function() {
@@ -146,14 +149,14 @@ Selection.prototype.add = function(region) {
   //befores
   while (i < l) {
     r = regions[i];
-    if (r.end() >= beg) break;
+    if (r.end().hash >= beg.hash) break;
     ret.push(r);
     i++;
   };
   //intersectors
   while (i < l) {
     r = regions[i];
-    if (r.begin() > end) break;
+    if (r.begin().hash > end.hash) break;
     c = r.cover(c); 
     i++;
   };
@@ -187,10 +190,10 @@ Selection.prototype.subtract = function(region) {
   while (i < l) {
     r = regions[i];
     var b = r.begin();
-    if (b > end) break;
+    if (b.hash > end.hash) break;
     // [---(....)....] or [----(....]....)
     // first region
-    if (b < beg) {
+    if (b.hash < beg.hash) {
       if (r.focus.hash < r.anchor.hash)
         ret.push(new Region(b, beg));
       else
@@ -199,7 +202,7 @@ Selection.prototype.subtract = function(region) {
     // [...(...)---] or (...[...)---]
     // second region
     var e = r.end();
-    if (e > end) {
+    if (e.hash > end.hash) {
       if (r.focus.hash < r.anchor.hash)
         ret.push(new Region(end, e));
       else

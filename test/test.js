@@ -10,6 +10,10 @@ var invert = ot.invert;
 var apply = ot.apply;
 var opt = ot.optypes;
 
+var Point = ot.Point;
+var Region = ot.Region;
+var Selection = ot.Selection;
+
 var r = opt.retain;
 var i = opt.insert;
 var d = opt['delete'];
@@ -167,5 +171,43 @@ describe('Transform', function() {
     var p = transform(opdi,opa,'left');
     var d = apply(apply(doca,opa),p);
     assert.equal(JSON.stringify(docadi),JSON.stringify(d));
+  });
+});
+
+describe('Section', function() {
+  it ('Can add Regions', function() {
+    var s = new Selection();
+    var r1 = new Region(new Point([2,9]), new Point([2,5]));
+    var r2 = new Region(new Point([1,3]), new Point([2,3]));
+    s = s.add(r1);
+    s = s.add(r2);
+    var target = new Selection([r2,r1]);
+    assert.equal(JSON.stringify(s),JSON.stringify(target));
+  });
+
+  it ('Can add intersecting regions', function() {
+    var s = new Selection();
+    var r1 = new Region(new Point([2,9]), new Point([2,5]));
+    var r2 = new Region(new Point([1,3]), new Point([2,3]));
+    var r3 = new Region(new Point([2,6]), new Point([2,2]));
+    s = s.add(r1);
+    s = s.add(r2);
+    s = s.add(r3);
+    var target = new Selection([new Region(new Point([2,9]), new Point([1,3]))]);
+    assert.equal(JSON.stringify(s),JSON.stringify(target));
+  });
+
+  it ('Can subtract region', function() {
+    var s = new Selection();
+    var r1 = new Region(new Point([2,9]), new Point([2,5]));
+    var r2 = new Region(new Point([1,3]), new Point([2,3]));
+    var r3 = new Region(new Point([2,6]), new Point([2,2]));
+    s = s.add(r1);
+    s = s.add(r2);
+    s = s.subtract(r3);
+    var r1a = new Region(new Point([2,9]), new Point([2,6]));
+    var r2a = new Region(new Point([1,3]), new Point([2,2]));
+    var target = new Selection([r2a, r1a]);
+    assert.equal(JSON.stringify(s),JSON.stringify(target));
   });
 });
