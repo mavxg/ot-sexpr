@@ -154,7 +154,7 @@ Selection.prototype.add = function(region) {
   while (i < l) {
     r = regions[i];
     if (r.begin() > end) break;
-    c = r.intersection(c);
+    c = r.cover(c); 
     i++;
   };
   ret.push(c);
