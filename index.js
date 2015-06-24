@@ -82,6 +82,8 @@ Point.max = function(a, b) {
   return a.hash >= b.hash ? a : b;
 };
 
+//TODO: WHAT should the semantics be for the Region class? Closed, Open, Half Open (which end)?
+
 //pair of points
 function Region(focus, anchor) {
   this.focus = focus;
@@ -112,6 +114,7 @@ Region.prototype.intersection = function(region) {
   if (beg > end) return null;
   return new Region(end, beg);
 };
+//Region has no subtract because subtract might return two regions
 Region.prototype.intersects = function(region) {
   return (this.end().hash >= region.begin().hash && this.begin().hash <= region.end().hash);
 };
@@ -166,7 +169,50 @@ Selection.prototype.add_all = function(regions) {
   regions.forEach(this.add, this);
 };
 Selection.prototype.subtract = function(region) {
-  //TODO
+  var beg = region.begin();
+  var end = region.end();
+  var regions = this.regions;
+  var l = regions.length;
+  var i = 0;
+  var r;
+  var ret = [];
+  //befores
+  while (i < l) {
+    r = regions[i];
+    if (r.end() > beg) break;
+    ret.push(r);
+    i++;
+  };
+  //intersectors
+  while (i < l) {
+    r = regions[i];
+    var b = r.begin();
+    if (b > end) break;
+    // [---(....)....] or [----(....]....)
+    // first region
+    if (b < beg) {
+      if (r.focus.hash < r.anchor.hash)
+        ret.push(new Region(b, beg));
+      else
+        ret.push(new Region(beg, b));
+    }
+    // [...(...)---] or (...[...)---]
+    // second region
+    var e = r.end();
+    if (e > end) {
+      if (r.focus.hash < r.anchor.hash)
+        ret.push(new Region(end, e));
+      else
+        ret.push(new Region(e, end));
+    }
+    i++;
+  };
+  //afters
+  while (i < l) {
+    ret.push(regions[i]);
+    i++;
+  };
+  return new Selection(ret);
 };
 Selection.prototype.contains = function(region) {
   //TODO
