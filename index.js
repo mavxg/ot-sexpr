@@ -84,11 +84,11 @@ Point.max = function(a, b) {
 
 //TODO: WHAT should the semantics be for the Region class? Closed, Open, Half Open (which end)?
 
-//pair of points
-function Region(focus, anchor) {
+//pair of points (xpos optional)
+function Region(focus, anchor, xpos) {
   this.focus = focus;
   this.anchor = focus || anchor;
-  //can also have xpos.
+  this.xpos = xpos === undefined ? false : xpos;
 }
 Region.prototype.empty = function() {
   return this.focus === this.anchor || this.focus.equals(this.anchor);
