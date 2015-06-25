@@ -66,165 +66,6 @@ unpushS.toJSON = function() { return "unpushS"; };
 
 //we might have the pops the wrong way up... (at the moment we don't check kind)
 
-//path within s-expr
-function Point(path) {
-  this.path = path;
-  this.hash = path.join('.');
-}
-Point.prototype.toJSON = function() {
-  return {path:this.hash};
-}
-Point.prototype.equals = function(other) {
-  return this.hash === other.hash;
-};
-
-Point.min = function(a, b) {
-  return a.hash < b.hash ? a : b;
-};
-Point.max = function(a, b) {
-  return a.hash >= b.hash ? a : b;
-};
-
-//TODO: WHAT should the semantics be for the Region class? Closed, Open, Half Open (which end)?
-
-//pair of points (xpos optional)
-function Region(focus, anchor, xpos) {
-  this.focus = focus;
-  this.anchor = anchor || focus;
-  this.xpos = xpos === undefined ? false : xpos;
-}
-Region.prototype.empty = function() {
-  return this.focus === this.anchor || this.focus.equals(this.anchor);
-};
-Region.prototype.begin = function() {
-  return (this.focus.hash < this.anchor.hash) ? this.focus : this.anchor;
-};
-Region.prototype.end = function() {
-  return (this.focus.hash > this.anchor.hash) ? this.focus : this.anchor;
-};
-//Region.prototype.size = function() {} //what would this be in an sexpr
-//return region covering both regions
-Region.prototype.cover = function(region) {
-  var beg = Point.min(region.begin(), this.begin());
-  var end = Point.max(region.end(), this.end());
-  if (region.focus.hash < region.anchor.hash)
-    return new Region(beg, end);
-  return new Region(end, beg);
-};
-Region.prototype.intersection = function(region) {
-  var beg = Point.max(region.begin(), this.begin());
-  var end = Point.min(region.end(), this.end());
-  if (beg > end) return null;
-  return new Region(end, beg);
-};
-//Region has no subtract because subtract might return two regions
-Region.prototype.intersects = function(region) {
-  return (this.end().hash >= region.begin().hash && this.begin().hash <= region.end().hash);
-};
-Region.prototype.contains = function(region) {
-  if (region.path !== undefined) { //actually a point
-    var point = region;
-    return (this.begin().hash <= point.hash && this.end().hash >= point.hash)
-  }
-  return (this.begin().hash <= region.begin().hash && this.end().hash >= region.end().hash)
-};
-
-
-//set of non overlapping regions
-function Selection(regions) {
-  this.regions = regions || [];
-}
-Selection.prototype.clear = function() {
-  return new Selection();
-};
-Selection.prototype.add = function(region) {
-  var beg = region.begin();
-  var end = region.end();
-  var regions = this.regions;
-  var l = regions.length;
-  var i = 0;
-  var r;
-  var c = region;
-  var ret = [];
-  //befores
-  while (i < l) {
-    r = regions[i];
-    if (r.end().hash >= beg.hash) break;
-    ret.push(r);
-    i++;
-  };
-  //intersectors
-  while (i < l) {
-    r = regions[i];
-    if (r.begin().hash > end.hash) break;
-    c = r.cover(c); 
-    i++;
-  };
-  ret.push(c);
-  //afters
-  while (i < l) {
-    ret.push(regions[i]);
-    i++;
-  };
-  return new Selection(ret);
-};
-Selection.prototype.add_all = function(regions) {
-  regions.forEach(this.add, this);
-};
-Selection.prototype.subtract = function(region) {
-  var beg = region.begin();
-  var end = region.end();
-  var regions = this.regions;
-  var l = regions.length;
-  var i = 0;
-  var r;
-  var ret = [];
-  //befores
-  while (i < l) {
-    r = regions[i];
-    if (r.end().hash > beg.hash) break;
-    ret.push(r);
-    i++;
-  };
-  //intersectors
-  while (i < l) {
-    r = regions[i];
-    var b = r.begin();
-    if (b.hash > end.hash) break;
-    // [---(....)....] or [----(....]....)
-    // first region
-    if (b.hash < beg.hash) {
-      if (r.focus.hash < r.anchor.hash)
-        ret.push(new Region(b, beg));
-      else
-        ret.push(new Region(beg, b));
-    }
-    // [...(...)---] or (...[...)---]
-    // second region
-    var e = r.end();
-    if (e.hash > end.hash) {
-      if (r.focus.hash < r.anchor.hash)
-        ret.push(new Region(end, e));
-      else
-        ret.push(new Region(e, end));
-    }
-    i++;
-  };
-  //afters
-  while (i < l) {
-    ret.push(regions[i]);
-    i++;
-  };
-  return new Selection(ret);
-};
-Selection.prototype.contains = function(region) {
-  for (var i = this.regions.length - 1; i >= 0; i--) {
-    if (this.regions[i].contains(region)) return true;
-  };
-  return false;
-};
-
-
 //RULES
 // [r(a),r(b)] -> [r(a+b)]
 // [i(a),i(b)] -> [i(a.concat(b))]
@@ -925,10 +766,10 @@ module.exports = {
   compose: compose,
   invert: invert,
   identify: identify,
+  Point: require('./lib/point'),
+  Region: require('./lib/region'),
+  Selection: require('./lib/selection'),
   diff: diff,
-  Point: Point,
-  Region: Region,
-  Selection: Selection,
   optypes: {
     retain  : r,
     insert  : _i,
