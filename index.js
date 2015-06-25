@@ -655,6 +655,11 @@ function transform(opA, opB, side) {
   return result;
 }
 
+function transformCursor(cursor, op, isOwnOp) {
+  //TODO
+  return cursor;
+}
+
 var uuid_seq = 0;
 function uuid() {
   return uuid_seq++;
@@ -765,6 +770,7 @@ module.exports = {
   transform: transform,
   compose: compose,
   invert: invert,
+  transformCursor: transformCursor,
   identify: identify,
   Point: require('./lib/point'),
   Region: require('./lib/region'),
