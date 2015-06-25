@@ -13,6 +13,10 @@
 
 //with critical regions we also need START END
 
+var Point = require('./lib/point');
+var Region = require('./lib/region');
+var Selection = require('./lib/selection');
+
 var RETAIN  = "retain";
 var INSERT  = "insert";
 var PUSH    = "push";
@@ -655,9 +659,99 @@ function transform(opA, opB, side) {
   return result;
 }
 
+function transformPoint(point, ops) {
+  var pos = [0];
+  var depth = 0;
+  var cursor = point.slice(0); //clone
+  var changed = false;
+  var pushed = 0;
+
+  function subpathMatch() {
+    for (var i=0; i < depth; i++) if (pos[i] !== cursor[i]) 
+      return false;
+    return true;
+  }
+
+  for (var i=0; i < ops.length; i++) {
+    var c = ops[i];
+    var op_type = c.op;
+
+    if (op_type === UP) {
+      pos.push(0);
+      depth++;
+    } else if (op_type === DOWN) {
+      pos.pop();
+      depth--;
+      pos[depth] += 1;
+    }
+
+    //TODO
+    //If we Push then we need to go up a level
+    //If we UnPush then we need to go down a level.
+    //pop
+    //unpop ... what should all these do?
+
+    //What if we keep track of this.
+    //
+
+    //we have passed our cursor so any further ops will do nothing
+    if (cursor <= pos) break;
+
+    switch (op_type) {
+      case PUSH:
+        pushed++;
+        break;
+      case POP:
+        pushed--;
+        break;
+      case UNPUSH:
+        pushed--;
+        break;
+      case UNPOP:
+        pushed++;
+        break;
+      case RETAIN:
+        pos[depth] += c.n;
+        break;
+      case INSERT:
+        pos[depth] += c.n;
+        if (subpathMatch())
+          cursor[depth] += c.n;
+        break;
+      case DELETE:
+        if (subpathMatch())
+          cursor[depth] -= Math.min(c.n, cursor[depth] - pos[depth]); //iff the subpath matches
+        break;
+    }
+
+  }
+  if (pushed !== 0) throw "Unhandled push/pop";
+  return (changed ? cursor : point);
+}
+
+function transformRegion(region, op) {
+  var nfocus = transformPoint(region.focus, op);
+  if (region.empty())
+    return (nfocus === region.focus) ? region : new Region(nfocus);
+  var nanchor = transformPoint(region.anchor, op);
+  if (nfocus !== region.focus || nanchor !== region.anchor)
+    return new Region(nfocus, nanchor);
+  return region;
+}
+
+//TODO: add some form of put cursor here for ownOp
 function transformCursor(cursor, op, isOwnOp) {
-  //TODO
-  return cursor;
+  //For now assume that the editor moved the cursor for us
+  // when it is our op.
+  if (isOwnOp)
+    return cursor;
+  var nrs = [];
+  var changed = false;
+  for (var i = cursor.regions.length - 1; i >= 0; i--) {
+    var region = transformRegion(cursor.regions[i], op);
+    if (region !== cursor.regions[i]) changed = true;
+  };
+  return (changed ? new Selection(nrs) : cursor);
 }
 
 var uuid_seq = 0;
@@ -772,9 +866,9 @@ module.exports = {
   invert: invert,
   transformCursor: transformCursor,
   identify: identify,
-  Point: require('./lib/point'),
-  Region: require('./lib/region'),
-  Selection: require('./lib/selection'),
+  Point: Point,
+  Region: Region,
+  Selection: Selection,
   diff: diff,
   optypes: {
     retain  : r,

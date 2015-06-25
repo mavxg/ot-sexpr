@@ -211,3 +211,23 @@ describe('Section', function() {
     assert.equal(JSON.stringify(s),JSON.stringify(target));
   });
 });
+
+
+describe('TransformCursor', function() {
+  //TODO
+  //it ('Insert before moves cursor forward', function() {
+    //TODO
+  //});
+
+  //it ('Insert after has no effect', function() {
+    //TODO
+  //});
+
+  //it ('Push pop before moves cursor forward', function() {
+    //TODO
+  //});
+
+  //it ('Push pop surrounding deepens cursor', function() {
+    //TODO
+  //});
+});
