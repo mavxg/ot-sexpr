@@ -662,7 +662,7 @@ function transform(opA, opB, side) {
 function transformPoint(point, ops) {
   var pos = [0];
   var depth = 0;
-  var cursor = point.slice(0); //clone
+  var cursor = [0].concat(point.path); //clone
   var changed = false;
   var pushed = 0;
 
@@ -675,6 +675,11 @@ function transformPoint(point, ops) {
   for (var i=0; i < ops.length; i++) {
     var c = ops[i];
     var op_type = c.op;
+
+    //console.log(c);
+    //console.log(depth);
+    //console.log(pos);
+    //console.log(cursor);
 
     if (op_type === UP) {
       pos.push(0);
@@ -715,24 +720,29 @@ function transformPoint(point, ops) {
         break;
       case INSERT:
         pos[depth] += c.n;
-        if (subpathMatch())
+        if (subpathMatch()) {
           cursor[depth] += c.n;
+          changed = true;
+        }
         break;
       case DELETE:
-        if (subpathMatch())
+        if (subpathMatch()) {
           cursor[depth] -= Math.min(c.n, cursor[depth] - pos[depth]); //iff the subpath matches
+          changed = true;
+        }
         break;
     }
 
   }
   if (pushed !== 0) throw "Unhandled push/pop";
-  return (changed ? cursor : point);
+  return (changed ? new Point(cursor.slice(1)) : point);
 }
 
 function transformRegion(region, op) {
   var nfocus = transformPoint(region.focus, op);
-  if (region.empty())
-    return (nfocus === region.focus) ? region : new Region(nfocus);
+  if (region.empty()) {
+    return (nfocus === region.focus ? region : new Region(nfocus));
+  }
   var nanchor = transformPoint(region.anchor, op);
   if (nfocus !== region.focus || nanchor !== region.anchor)
     return new Region(nfocus, nanchor);
@@ -750,6 +760,7 @@ function transformCursor(cursor, op, isOwnOp) {
   for (var i = cursor.regions.length - 1; i >= 0; i--) {
     var region = transformRegion(cursor.regions[i], op);
     if (region !== cursor.regions[i]) changed = true;
+    nrs.push(region);
   };
   return (changed ? new Selection(nrs) : cursor);
 }

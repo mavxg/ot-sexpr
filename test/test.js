@@ -9,6 +9,7 @@ var transform = ot.transform;
 var invert = ot.invert;
 var apply = ot.apply;
 var opt = ot.optypes;
+var transformCursor = ot.transformCursor
 
 var Point = ot.Point;
 var Region = ot.Region;
@@ -214,14 +215,18 @@ describe('Section', function() {
 
 
 describe('TransformCursor', function() {
-  //TODO
-  //it ('Insert before moves cursor forward', function() {
-    //TODO
-  //});
+  var s = new Selection([new Region(new Point([2,2,8]))]);
+  var sbf = new Selection([new Region(new Point([2,2,6]))]);
+  var sa = new Selection([new Region(new Point([2,2,8 + 6]))]);
+  it ('Insert before moves cursor forward', function() {
+    var ns = transformCursor(s, opa);
+    assert.equal(JSON.stringify(ns),JSON.stringify(sa));
+  });
 
-  //it ('Insert after has no effect', function() {
-    //TODO
-  //});
+  it ('Insert after has no effect', function() {
+    var ns = transformCursor(sbf, sa);
+    assert.equal(ns, sbf);
+  });
 
   //it ('Push pop before moves cursor forward', function() {
     //TODO
