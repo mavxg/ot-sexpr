@@ -43,6 +43,8 @@ var opa = [upA,r(2),upA,r(2),upS,r(7),i("Cruel "),r(6),down,down,down];
 //bold text
 var opb = [upA,r(2),upA,r(2),upS,r(7),
   pop,pushA,i([bold,[]]),pushS,r(6),pop,down,down,down];
+var opbh = [upA,r(2),upA,r(2),upS,
+  pop,pushA,i([bold,[]]),pushS,r(7),pop,pushS,r(6),pop, down,down,down];
 //Note: the list inserted after bold is atomic.
 
 //should not modify a or b under transform
@@ -218,6 +220,7 @@ describe('TransformCursor', function() {
   var s = new Selection([new Region(new Point([2,2,8]))]);
   var sbf = new Selection([new Region(new Point([2,2,6]))]);
   var sa = new Selection([new Region(new Point([2,2,8 + 6]))]);
+  var sh = new Selection([new Region(new Point([2,4,1]))]);
   it ('Insert before moves cursor forward', function() {
     var ns = transformCursor(s, opa);
     assert.equal(JSON.stringify(ns),JSON.stringify(sa));
@@ -228,9 +231,11 @@ describe('TransformCursor', function() {
     assert.equal(ns, sbf);
   });
 
-  //it ('Push pop before moves cursor forward', function() {
-    //TODO
-  //});
+  it ('Push pop before moves cursor forward', function() {
+    var ns = transformCursor(s, opbh);
+    console.log(ns);
+    assert.equal(JSON.stringify(ns),JSON.stringify(sh));
+  });
 
   //it ('Push pop surrounding deepens cursor', function() {
     //TODO
