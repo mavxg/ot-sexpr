@@ -13,6 +13,8 @@
 
 var Region = require('./lib/region');
 var Selection = require('./lib/selection');
+var List = require('./lib/list');
+var AttributedString = require('./lib/string');
 
 //op types
 var RETAIN  = "retain";
@@ -216,7 +218,7 @@ function _slice(op, s, e) {
     if (op.op === DELETE)
       return _d(op.value.slice(s,e), CHAR, op.unattributes);
     else //insert
-      return _i(op.value.slice(s,e), op.type, op.attributes); //TODO... slice attributes...
+      return _i(op.value.slice(s,e), op.type, op.attributes);
   if (op.op === RETAIN)
     return r((e === undefined ? op.n : e) - s, op.attributes, op.unattributes);
   return op;
@@ -353,7 +355,7 @@ function compose(opA, opB) {
   };
 
   while ((chunk = take(-1)))
-    append(chunk); //TODO: probably need special cases for each..
+    append(chunk);
 
   return result;
 }
@@ -384,7 +386,7 @@ function transform(opA, opB, side) {
       chunk = take(length, INSERT);
       switch (chunk.op) {
         case INSERT:
-          append(chunk);
+          append(chunk); ///??? TODO: do we need to adjust the attributes stuff?
           break;
         case DELETE:
         case RETAIN:
@@ -402,7 +404,8 @@ function transform(opA, opB, side) {
     }
   }
 
-  function retain(length) {
+  function retain(op) {
+    var length = op.n;
     while (length > 0) {
       chunk = take(length, INSERT);
       append(chunk);
@@ -433,7 +436,7 @@ function transform(opA, opB, side) {
         append(r(op.n)) //skip over inserted
         break;
       case RETAIN:
-        retain(op.n);
+        retain(op);
         break;
       case DELETE:
         del(op);
@@ -581,25 +584,159 @@ function apply(d,ops) {
   var stack = []
   var t = [];
   var op;
-  var offset = 0;
+  var offset = 0; //total document offset
 
   //stack for traversing the document
   var docStack = [];
-  var dp = d;
+  var dp = [d]; //top of document stack
+  dp.index = function(i) { return this[i]; }
   var index = 0; //offset in element
+  var isString = false;
 
-  function append(vals) {
-    if (typeof t === 'string') {
-      t += vals
-    } else {
-      var id = t.id;
-      t = t.concat(vals);
-      t.id = id;
+  function process(op) {
+    //TODO: process an insert op.
+  }
+
+  function del(length) {
+    //basically the same as retain but do not do anything to the output stack
+    var c;
+    while (length > 0) {
+      while (length > 0 && index >= dp.length) {
+        //POP input doc (but not output)
+        var pp = docStack.pop();
+        index = pp.index+1;
+        dp = pp.dp;
+        length--;
+        isString = false;
+      }
+      if (isString) {
+        var remaining = (dp.length - index)
+        if (length > remaining) {
+          index+=remaining;
+          length-=remaining;
+        } else {
+          index+=length;
+          length=0;
+        }
+      } else {
+        c = dp.index(index);
+        if (c instanceof List) {
+          if (c.size <= length) {
+            index++;
+            length-=c.size;
+          } else {
+            //go deeper into the document
+            docStack.push({index:index, dp:dp});
+            dp = c;
+            index = 0;
+            length--;
+          }
+        } else if (c instanceof AttributedString) {
+          if (c.size <= length) {
+            index++;
+            length-=c.size;
+          } else {
+            isString = true;
+            //go deeper into the document
+            docStack.push({index:index, dp:dp});
+            dp = c;
+            index = 0;
+            length = 0; //by definition
+          }
+        } else {
+          //atom of some form.
+          index++;
+          length--;
+        }
+      }
     }
   }
 
-  function retain(n, attributes, unattribute) {
-
+  function retain(length, attributes, unattributes) {
+    var c;
+    while (length > 0) {
+      while (length > 0 && index >= dp.length) {
+        //POP output doc
+        var tmp = stack.pop();
+        tmp.push(t);
+        t = tmp;
+        //POP input doc
+        var pp = docStack.pop();
+        index = pp.index+1;
+        dp = pp.dp;
+        length--;
+        isString = false;
+      }
+      if (isString) {
+        var n = dp.slice(index, index + length);
+        if (unattributes)
+          n = n.removeAttributes(unattributes);
+        if (attributes)
+          n = n.addAttributes(attributes);
+        length-=n.length;
+        index+=n.length;
+        t = t.concat(n);
+      } else {
+        c = dp.index(index);
+        if (c instanceof List) {
+          if (c.size <= length) {
+            if (attributes || unattributes)
+              if (length > 1)
+                throw "Can only attribute the start of a list";
+              else {
+                if (unattributes)
+                  c = c.unsetAttributes(unattributes);
+                if (attributes)
+                  c = c.setAttributes(attributes);
+              }
+            t.push(c);
+            index++;
+            length-=c.size;
+          } else {
+            var n = new List(c.id, c.attributes);
+            if (unattributes)
+                c = c.unsetAttributes(unattributes);
+            if (attributes)
+                c = c.setAttributes(attributes);
+            //go deeper into the output stack
+            stack.push(t);
+            t = n;
+            //go deeper into the document
+            docStack.push({index:index, dp:dp});
+            dp = c;
+            index = 0;
+            length--;
+          }
+        } else if (c instanceof AttributedString) {
+          if (attributes || unattributes)
+              throw "Can only attribute a substring";
+          if (c.size <= length) {
+            t.push(c);
+            index++;
+            length-=c.size;
+          } else {
+            isString = true;
+            var n = c.slice(0, length - 1); //-1 for the start element
+            //go deeper into the output stack
+            stack.push(t);
+            t = n;
+            //go deeper into the document
+            docStack.push({index:index, dp:dp});
+            dp = c;
+            index = length - 1;
+            //length -= (1 + n.length);
+            length = 0; //by definition
+          }
+        } else {
+          //atom of some form.
+          if (attributes || unattributes)
+            throw "Attributes are only for strings and lists";
+          t.push(c);
+          index++;
+          length--;
+        }
+      }
+    }
   }
 
   for (var i = 0; i < ops.length; i++) {
@@ -609,13 +746,11 @@ function apply(d,ops) {
         process(op);
         break;
       case RETAIN:
-        lin = prefix(doc, offset, offset + op.n);
-        //TODO: unattribute
-        //TODO: attribute
-        lin.forEach(process);
+        retain(op.n,op.attributes, op.unattributes);
         offset += op.n;
         break;
       case DELETE:
+        del(op.n);
         offset += op.n;
         break;
       default:
@@ -624,10 +759,7 @@ function apply(d,ops) {
     }
   };
 
-  if (offset < d.size) {
-      lin = prefix(doc, offset, d.size);
-      lin.forEach(process);
-  }
+  if (offset < d.size) retain(d.size - offset);
 
   return t[0];
 }
