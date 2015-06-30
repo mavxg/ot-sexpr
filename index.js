@@ -536,7 +536,7 @@ function transformPoint(point, ops) {
     var c = ops[i];
     var op_type = c.op;
 
-    if (cursor <= pos) break;
+    if (cursor < pos) break;
 
     switch (op_type) {
       case INSERT:

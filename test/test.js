@@ -34,9 +34,10 @@ var docdi = parse('{"title":"Tests"}(doc (p "Hello, Barnabus"))')[0];
 var docadi = parse('{"title":"Tests"}(doc (p "Hello, Cruel Barnabus"))')[0];
 
 //insert text
-var opa = [r(11),i("Cruel ","char")];
+var opa = [r(12),i("Cruel ","char")];
+
 //bold text
-var opb = [r(11),r(6,{bold:true})];
+var opb = [r(12),r(6,{bold:true})];
 
 var opbh = [r(2),pushA(),i("p","sym"),pushS(),i("A string here","char"),pop,pop];
 //Note: the list inserted after bold is atomic.
@@ -55,25 +56,25 @@ var opuu = [r(2),unpushA(),r(16),unpop];
 var opup = [r(2),unpushA(),r(1),pushA()];
 
 //delete insert
-var opdi = [r(11),d("World!","char"),i("Barnabus","char")];
+var opdi = [r(12),d("World!","char"),i("Barnabus","char")];
 //delete
-var opd = [r(9),d(", World!","char")];
+var opd = [r(10),d(", World!","char")];
 
 //invert targets
-var opbi = [r(11),r(6,UNDEFINED,{bold:true})];
+var opbi = [r(12),r(6,UNDEFINED,{bold:true})];
 
 //[upA,r(2),upA,r(3),upA,r(2),upS,i("Cruel "),down,r(6),down,down,down]
 //[upA,r(2),upA,r(3),upA,r(2),upS,i("Cruel "),r(6),down,down,down,down]
 
 //target = compose(opa,opbp) = compose(opb,opap)
-var opab = [r(11),i("Cruel ","char"),r(6,{bold:true})];
+var opab = [r(12),i("Cruel ","char"),r(6,{bold:true})];
 
 //[upA,r(2),upA,r(2),upS,r(7),                              pop,pushA,i([bold,[]]),pushS,i("Cruel ")                                      ,r(6),pop,down,down,down]
 //[upA,r(2),upA,r(2),upS,r(1),upA,r(2),upS,i("Cruel "),r(4),pop,pushA,i([bold,[]]),down,down,down,down,pushS,r(6),pop,down,down,down]
 
 //target transformed
-var opbp = [r(11+6),r(6,{bold:true})];
-var opap = [r(11),i("Cruel ","char")];
+var opbp = [r(12+6),r(6,{bold:true})];
+var opap = [r(12),i("Cruel ","char")];
 
 //target transformed by opu
 //var opbpu = [upA,r(2),upA,r(2),upS,r(7),
