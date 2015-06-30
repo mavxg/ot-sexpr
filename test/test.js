@@ -53,9 +53,9 @@ var opuu = [r(2),unpushA(),r(16),unpop];
 var opup = [r(2),unpushA(),r(1),pushA()];
 
 //delete insert
-var opdi = [r(11),d("World!"),i("Barnabus")];
+var opdi = [r(11),d("World!","char"),i("Barnabus","char")];
 //delete
-var opd = [r(9),d(", World!")];
+var opd = [r(9),d(", World!","char")];
 
 //invert targets
 var opbi = [r(11),r(6,null,{bold:true})];
@@ -64,22 +64,21 @@ var opbi = [r(11),r(6,null,{bold:true})];
 //[upA,r(2),upA,r(3),upA,r(2),upS,i("Cruel "),r(6),down,down,down,down]
 
 //target = compose(opa,opbp) = compose(opb,opap)
-var opab = [r(11),i("Cruel "),r(6,{bold:true})];
+var opab = [r(11),i("Cruel ","char"),r(6,{bold:true})];
 
 //[upA,r(2),upA,r(2),upS,r(7),                              pop,pushA,i([bold,[]]),pushS,i("Cruel ")                                      ,r(6),pop,down,down,down]
 //[upA,r(2),upA,r(2),upS,r(1),upA,r(2),upS,i("Cruel "),r(4),pop,pushA,i([bold,[]]),down,down,down,down,pushS,r(6),pop,down,down,down]
 
 //target transformed
 var opbp = [r(11+6),r(6,{bold:true})];
-var opap = [r(11),i("Cruel ")];
-
+var opap = [r(11),i("Cruel ","char")];
 
 //target transformed by opu
 //var opbpu = [upA,r(2),upA,r(2),upS,r(7),
 //  pop,pushA,i([bold,[]]),pushS,r(12),pop,down,down,down];
-var opapu  = [r(4),i("Cruel ")];
-var opapuu = [r(3),i("Cruel ")];
-var opapup = [r(3),i("Cruel ")];
+var opapu  = [r(4),i("Cruel ","char")];
+var opapuu = [r(3),i("Cruel ","char")];
+var opapup = [r(3),i("Cruel ","char")];
 
 //console.log(apply(apply(doca,opa),opbp))
 //console.log(apply(apply(doca,opb),opap))
