@@ -29,8 +29,6 @@ var UNDEFINED;
 
 var doca = parse('{"title":"Tests"}(doc (p "Hello, World!"))')[0];
 var docb = parse('{"title":"Tests"}(doc [[7,{}],[6,{"bold":true}]](p "Hello, World!"))')[0];
-var docd  = parse('{"title":"Tests"}(doc (p "Hello"))')[0];
-var docdi = parse('{"title":"Tests"}(doc (p "Hello, Barnabus"))')[0];
 var docadi = parse('{"title":"Tests"}(doc (p "Hello, Cruel Barnabus"))')[0];
 
 //insert text
@@ -113,12 +111,12 @@ describe('Invert', function() {
 describe('Delete', function() {
   it ('Can delete characters', function() {
     var d = apply(doca, opd);
-    assert.equal(JSON.stringify(d),JSON.stringify(docd));
+    assert.equal(d.toSexpr(),'{"title":"Tests"}(doc (p "Hello"))');
   });
 
   it ('Can replace characters', function() {
     var d = apply(doca, opdi);
-    assert.equal(JSON.stringify(d),JSON.stringify(docdi));
+    assert.equal(d.toSexpr(),'{"title":"Tests"}(doc (p "Hello, Barnabus"))');
   });
 });
 
