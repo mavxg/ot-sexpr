@@ -25,6 +25,8 @@ var unpushS = opt.unpushS;
 var unpushA = opt.unpushA;
 var unpop = opt.unpop;
 
+var UNDEFINED;
+
 var doca = parse('{"title":"Tests"}(doc (p "Hello, World!"))')[0];
 var docb = parse('{"title":"Tests"}(doc [[7,{}],[6,{"bold":true}]](p "Hello, World!"))')[0];
 var docd  = parse('{"title":"Tests"}(doc (p "Hello"))')[0];
@@ -58,7 +60,7 @@ var opdi = [r(11),d("World!","char"),i("Barnabus","char")];
 var opd = [r(9),d(", World!","char")];
 
 //invert targets
-var opbi = [r(11),r(6,null,{bold:true})];
+var opbi = [r(11),r(6,UNDEFINED,{bold:true})];
 
 //[upA,r(2),upA,r(3),upA,r(2),upS,i("Cruel "),down,r(6),down,down,down]
 //[upA,r(2),upA,r(3),upA,r(2),upS,i("Cruel "),r(6),down,down,down,down]
