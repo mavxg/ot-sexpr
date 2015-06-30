@@ -77,8 +77,8 @@ var opap = [r(12),i("Cruel ","char")];
 //var opbpu = [upA,r(2),upA,r(2),upS,r(7),
 //  pop,pushA,i([bold,[]]),pushS,r(12),pop,down,down,down];
 var opapu  = [r(11),i("Cruel ","char")];
-var opapuu = [r(3),i("Cruel ","char")];
-var opapup = [r(3),i("Cruel ","char")];
+var opapuu = [r(11),i("Cruel ","char")];
+var opapup = [r(12),i("Cruel ","char")];
 
 //console.log(apply(apply(doca,opa),opbp))
 //console.log(apply(apply(doca,opb),opap))
