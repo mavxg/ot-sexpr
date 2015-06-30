@@ -1,8 +1,6 @@
 //operations
 
 //retain {op:'retain', n:5}
-//pop {op:'pop'}
-//push {op:'push', kind:[]} or {op:'push', kind:""}
 //insert {op:'insert', values:[a b c]}
 //insert {op:'insert', values:"text"}
 //delete {op:'delete', values:[a b c]}
@@ -13,69 +11,70 @@
 
 //with critical regions we also need START END
 
-var Point = require('./lib/point');
 var Region = require('./lib/region');
 var Selection = require('./lib/selection');
 
+//op types
 var RETAIN  = "retain";
 var INSERT  = "insert";
-var PUSH    = "push";
-var POP     = "pop";
 var DELETE  = "delete";
-var UNPOP   = "unpop";
-var UNPUSH  = "unpush";
-var UP      = "up";
-var DOWN    = "down";
 var START   = "start";
 var END     = "end";
 
-var pop     = {op:POP};
-var unpop   = {op:UNPOP};
-var pushA   = {op:PUSH, kind:[]};
-var pushS   = {op:PUSH, kind:""};
-var unpushA = {op:UNPUSH, kind:[]};
-var unpushS = {op:UNPUSH, kind:""};
+//types
+var SYMBOL  = "sym";
+var NUMBER  = "num";
+var CHAR    = "char";
+var OBJ     = "obj";
+var PUSH    = "push"; //value is LIST or STRING
+var POP     = "pop";
+
+var STRING  = "string";
+var LIST    = "list";
 
 //linearisation
-var upA     = {op:UP, kind:[]};
-var upS     = {op:UP, kind:""};
-var down    = {op:DOWN};
+var pushA = function(attributes) { return {op:INSERT, value:LIST, type:PUSH, n:1, attributes:attributes}; }
+var pushS = function(attributes) { return {op:INSERT, value:STRING, type:PUSH, n:1, attributes:attributes}; }
+var pop   = {op:INSERT, type:POP, n:1};
 
 //critical regions
 var start   = {op:START};
 var end     = {op:END};
 
 //standard text/list operations
-function r(n) {
-  return {op:RETAIN, n:n};
+function r(n, attributes, unattributes) {
+  return {op:RETAIN, n:n, attributes:attributes, unattributes:unattributes};
 }
 
-function _i(vs) {
-  return {op:INSERT, values:vs, n:vs.length};
+function _i(vs, type, attributes) {
+  return {op:INSERT,
+    value:vs,
+    type:type,
+    n:(type === CHAR ? vs.length : 1),
+    attributes:attributes
+  };
 }
 
-function _d(vs) {
-  return {op:DELETE, values:vs, n:vs.length};
+function _d(vs, type, attributes) {
+  return {op:DELETE,
+    value:vs,
+    type:type,
+    n:(type === CHAR ? vs.length : 1),
+    unattributes:attributes //we should make this attributes or 
+                            //unattributes depending on what makes 
+                            //the code simplest
+  };
 }
 
-pop.toJSON = function() { return "pop"; };
-unpop.toJSON = function() { return "unpop"; };
-upA.toJSON = function() { return "upA"; };
-upS.toJSON = function() { return "upS"; };
-down.toJSON = function() { return "down"; };
-pushA.toJSON = function() { return "pushA"; };
-pushS.toJSON = function() { return "pushS"; };
-unpushA.toJSON = function() { return "unpushA"; };
-unpushS.toJSON = function() { return "unpushS"; };
+var equal = require('./lib/is').equal;
 
 //we might have the pops the wrong way up... (at the moment we don't check kind)
 
 //RULES
-// [r(a),r(b)] -> [r(a+b)]
-// [i(a),i(b)] -> [i(a.concat(b))]
+// [r(a),r(b)] -> [r(a+b)] iff attributes match
+// [i(a),i(b)] -> [i(a.concat(b))] iff char and attributes match
 // [start,end] -> []
 // [end,start] -> []
-// [upA,r(n),down] ->[r(1)]
 
 function _push(ops, op) {
   if (ops.length === 0)
@@ -84,16 +83,18 @@ function _push(ops, op) {
   var t = ops[ops.length-1];
   switch (op.op) {
     case RETAIN:
-      if (t.op === RETAIN) {
+      if (t.op === RETAIN && equal(op.attributes, t.attributes) && equal(op.unattributes, t.unattributes)) {
         ops.pop();
         return _push(ops, r(t.n + op.n));
       }
       break;
     case INSERT:
-      if (t.op === INSERT && 
-        typeof t.values === typeof op.values) {
+      if (t.op === INSERT &&
+        op.type === CHAR &&
+        t.type === CHAR &&
+        equal(op.attributes, t.attributes)) {
         ops.pop();
-        return _push(ops, i(t.values.concat(op.values)));
+        return _push(ops, i(t.value.concat(op.values)), CHAR, t.attributes);
       }
       break;
     case START:
@@ -104,38 +105,9 @@ function _push(ops, op) {
       if (t.op === START)
         return ops.pop();
       break;
-    case DOWN:
-      if (t.op === UP) {
-        ops.pop();
-        return _push(ops,r(1));
-      }
-      if (t.op === RETAIN && 
-           ops.length > 1 && 
-           ops[ops.length-2].op === UP) {
-        ops.pop();
-        ops.pop();
-        return _push(ops, r(1));
-      }
   }
   return ops.push(op);
 }
-
-/*
-NOTE:
-
-Any list value you might be modifying non atomically should probably
-be put in as pushA,popA except we need the system to know how to deal
-with that kind of thing as we will want to insert large tables without
-resorting to that kind of thing.
-
-Although, we can simplify things by just throwing an error if we don't know
-what to do. We should also not be transposing things if we are in a critical region.
-perhaps we can have start critical and endcritical.
-
-when we compose it is the unions of the critical regions.
-
-*/
-
 
 /*
 takes a source and target document and returns operations to modify
@@ -226,16 +198,8 @@ function invert(ops) {
   function invertOp(op) {
     switch (op.op) {
       case RETAIN: return op;
-      case INSERT: return _d(op.values);
-      case DELETE: return _i(op.values);
-      case POP:    return unpop;
-      case UNPOP:  return pop;
-      case PUSH:
-        return (typeof op.kind === 'string') ? unpushS : unpushA;
-      case UNPUSH: 
-        return (typeof op.kind === 'string') ? pushS : pushA;
-      default:
-        return op;
+      case INSERT: return _d(op.value, op.type, op.attributes);
+      case DELETE: return _i(op.value, op.type, op.unattributes);
     }
   }
   return ops.map(invertOp);
@@ -248,12 +212,14 @@ function makeAppend(result) {
 }
 
 function _slice(op, s, e) {
-  switch (op.op) {
-    case INSERT: return _i(op.values.slice(s,e));
-    case DELETE: return _d(op.values.slice(s,e));
-    case RETAIN: return r((e === undefined ? op.n : e) - s);
-    default:     return op;
-  }
+  if (op.type === CHAR)
+    if (op.op === DELETE)
+      return _d(op.value.slice(s,e), CHAR, op.unattributes);
+    else //insert
+      return _i(op.value.slice(s,e), op.type, op.attributes); //TODO... slice attributes...
+  if (op.op === RETAIN)
+    return r((e === undefined ? op.n : e) - s, op.attributes, op.unattributes);
+  return op;
 }
 
 function makeTake(ops) {
@@ -295,8 +261,6 @@ function makeTake(ops) {
 function compose(opA, opB) {
   var result = [];
   var critical = 0;
-  var level_b = 0; //does not include push pop
-  var level_a = 0; //includes push and pop
 
   var append = makeAppend(result);
   var _funs  = makeTake(opA);
@@ -308,31 +272,19 @@ function compose(opA, opB) {
   var op;
 
   function retain(length) {
-    if (level_b > level_a) {
-      append(r(length));
-      return;
-    }
     while (length > 0) {
       chunk = take(length, DELETE);
       if (chunk === null) throw "Retain failed for this compose"
       switch (chunk.op) {
         case INSERT:
+          append(chunk); //TODO remove op.unattributes from chunk.attributes
+                         //     add op.attributes to chunk.attributes
+          length -= chunk.n;
+          break;
         case RETAIN:
-          append(chunk);
-          if (level_a === level_b)
-            length -= chunk.n;
-          break;
-        case DOWN:
-        case POP:
-          level_a--;
-          if (level_a===level_b)
-            length -= 1;
-          append(chunk);
-          break;
-        case UP:
-        case PUSH:
-          level_a++;
-          append(chunk);
+          append(chunk); //TODO remove op.unattributes from chunk.attributes or add to chunk.unattributes
+                         //     add op.attributes to chunk.attributes
+          length -= chunk.n;
           break;
         case START:
           if (critical === 0) append(chunk);
@@ -352,59 +304,8 @@ function compose(opA, opB) {
   for (var i = 0; i < opB.length; i++) {
     op = opB[i];
     switch (op.op) {
-      case PUSH:
-        chunk = peek();
-        if (chunk && (chunk.op === UNPUSH &&
-          typeof chunk.kind ===  typeof op.kind))
-          take(-1);
-        else
-          append(op);
-        break;
-      case UNPUSH:
-        chunk = peek();
-        if (chunk && (chunk.op === PUSH &&
-          typeof chunk.kind === typeof op.kind))
-          take(-1)
-        else
-          append(op);
-        break;
-      case POP:
-        chunk = peek();
-        if (chunk && chunk.op === UNPOP)
-          take(-1);
-        else
-          append(op);
-        break;
-      case UNPOP:
-        chunk = peek();
-        if (chunk && chunk.op === POP)
-          take(-1);
-        else
-          append(op);
-        break;
       case INSERT:
         append(op);
-        break;
-      case UP:
-        level_b++;
-        chunk = peek();
-        if (chunk && (chunk.op === UP || chunk.op === PUSH)) {
-          append(take(-1));
-          level_a++;
-        } else {
-          append(op);
-        }
-        break;
-      case DOWN:
-        level_b--;
-        chunk = peek();
-        if (chunk && (chunk.op === DOWN || chunk.op === POP)) {
-          append(take(-1));
-          level_a--;
-        } else {
-          append(op);
-          retain(1);
-        }
         break;
       case RETAIN:
         length = op.n;
@@ -418,30 +319,13 @@ function compose(opA, opB) {
           if (chunk === null) throw "DELETE failed for this compose"
           switch (chunk.op) {
             case INSERT:
-              if (level_a===level_b) {
-                length -= chunk.n;
-                s += chunk.n;
-              }
+              length -= chunk.n;
+              s += chunk.n;
               break;
             case RETAIN:
-              if (level_a===level_b) {
-                append(_slice(op,s,s+chunk.n));
-                length -= chunk.n;
-                s += chunk.n;
-              }
-              break;
-            case DOWN:
-            case POP:
-              level_a--;
-              if (level_a===level_b) {
-                length -= 1;
-                append(_slice(op,s,s+1));
-                s += 1
-              }
-              break;
-            case UP:
-            case PUSH:
-              level_a++;
+              append(_slice(op,s,s+chunk.n));
+              length -= chunk.n;
+              s += chunk.n;
               break;
             case START:
               if (critical === 0) append(chunk);
@@ -479,10 +363,6 @@ function transform(opA, opB, side) {
   var result = [];
   var critical_a = 0;
   var critical_b = 0;
-  var level_b = 0; //does NOT include push and pop
-  var level_a = 0; //does NOT include push and pop
-  var level_bpp = 0; //push and pop
-  var level_app = 0; //push and pop
 
   var append = makeAppend(result);
   var _funs  = makeTake(opA);
@@ -494,21 +374,12 @@ function transform(opA, opB, side) {
 
   //gobble opA while input
   function gobble() {
-    while((chunk=peek()) && 
-      (chunk.op === INSERT || chunk.op === PUSH || chunk.op === POP)) {
+    while((chunk=peek()) && chunk.op === INSERT)
       append(take(-1));
-      if (chunk.op === PUSH)
-        level_app++;
-      else if (chunk.op === POP)
-        level_app--;
-    }
   }
 
   function del(op) {
     var length = op.n;
-    if (level_b > level_a) {
-      return;
-    }
     while (length > 0) {
       chunk = take(length, INSERT);
       switch (chunk.op) {
@@ -517,15 +388,7 @@ function transform(opA, opB, side) {
           break;
         case DELETE:
         case RETAIN:
-          if (level_a < level_b) return;
-          if (level_a===level_b) length -= chunk.n;
-          break;
-        case DOWN:
-          level_a--;
-          if (level_a===level_b) length -= 1;
-          break;
-        case UP:
-          level_a++;
+          length -= chunk.n;
           break;
         case START:
           if (critical_b > 0)
@@ -540,10 +403,6 @@ function transform(opA, opB, side) {
   }
 
   function retain(length) {
-    if (level_b > level_a) {
-      append(r(length));
-      return;
-    }
     while (length > 0) {
       chunk = take(length, INSERT);
       append(chunk);
@@ -552,15 +411,7 @@ function transform(opA, opB, side) {
           break;
         case RETAIN:
         case DELETE:
-          if (level_a < level_b) return; 
-          if (level_a===level_b) length -= chunk.n;
-          break;
-        case DOWN:
-          level_a--;
-          if (level_a===level_b) length -= 1;
-          break;
-        case UP:
-          level_a++;
+          length -= chunk.n;
           break;
         case START:
           if (critical_b > 0)
@@ -574,67 +425,12 @@ function transform(opA, opB, side) {
     }
   }
   
-  var level_x = 0;
-  
   for (var i = 0; i < opB.length; i++) {
     op = opB[i];
     switch (op.op) {
-      case PUSH:
-        if (level_a === level_b) {
-          if (left) gobble();
-          append(typeof op.kind === 'string' ? upS : upA);
-        } else {
-          throw "Unsupported transform: PUSH different levels"
-        }
-        break;
-      case UNPUSH:
-        if (left) gobble();
-        chunk = peek();
-        if (chunk && chunk.op === UP &&
-          typeof chunk.kind === typeof op.kind) {
-          take(-1);
-        } else {
-          level_a--;
-        }
-        //OR do a level_a--
-        // and if level_a=== level_b append(r(-1))
-        break;
-      case POP:
-        if (left) gobble();
-        append(down);
-        break;
-      case UNPOP:
-        chunk = peek();
-        if (chunk && chunk.op === DOWN &&
-          typeof chunk.kind === typeof op.kind) {
-          take(-1);
-        } else {
-          level_a++;
-          if (level_a===level_b) append(r(-1))
-        }
-        //or do a level_a++
-        // and if level_a=== level_b append(r(-1))
-        break;
       case INSERT:
-        if (level_b === level_a) {
-          if (left) gobble();
-          append(r(op.n)) //skip over inserted
-        }
-        break;
-      case UP:
-        level_b++;
-        chunk = peek();
-        if (chunk && chunk.op === UP) {
-          append(take(-1));
-          level_a++;
-        }
-        break;
-      case DOWN:
-        level_b--;
-        if (chunk && chunk.op === DOWN) {
-          append(take(-1));
-          level_a--;
-        } else if (level_b === level_a) retain(1);
+        if (left) gobble();
+        append(r(op.n)) //skip over inserted
         break;
       case RETAIN:
         retain(op.n);
@@ -660,82 +456,27 @@ function transform(opA, opB, side) {
 }
 
 function transformPoint(point, ops) {
-  var pos = [0];
-  var depth = 0;
-  var cursor = [0].concat(point.path); //clone
-  var changed = false;
-  var pushed = 0;
-
-  function subpathMatch() {
-    for (var i=0; i < depth; i++) if (pos[i] !== cursor[i]) 
-      return false;
-    return true;
-  }
+  var pos = 0
+  var cursor = point;
 
   for (var i=0; i < ops.length; i++) {
     var c = ops[i];
     var op_type = c.op;
 
-    //console.log(c);
-    //console.log(depth);
-    //console.log(pos);
-    //console.log(cursor);
-
-    if (op_type === UP) {
-      pos.push(0);
-      depth++;
-    } else if (op_type === DOWN) {
-      pos.pop();
-      depth--;
-      pos[depth] += 1;
-    }
-
-    //TODO
-    //If we Push then we need to go up a level
-    //If we UnPush then we need to go down a level.
-    //pop
-    //unpop ... what should all these do?
-
-    //What if we keep track of this.
-    //
-
-    //we have passed our cursor so any further ops will do nothing
     if (cursor <= pos) break;
 
     switch (op_type) {
-      case PUSH:
-        pushed++;
-        break;
-      case POP:
-        pushed--;
-        break;
-      case UNPUSH:
-        pushed--;
-        break;
-      case UNPOP:
-        pushed++;
-        break;
-      case RETAIN:
-        pos[depth] += c.n;
-        break;
       case INSERT:
-        pos[depth] += c.n;
-        if (subpathMatch()) {
-          cursor[depth] += c.n;
-          changed = true;
-        }
+        cursor += c.n;
+      case RETAIN:
+        pos += c.n;
         break;
       case DELETE:
-        if (subpathMatch()) {
-          cursor[depth] -= Math.min(c.n, cursor[depth] - pos[depth]); //iff the subpath matches
-          changed = true;
-        }
+        cursor[depth] -= Math.min(c.n, cursor - pos);
         break;
-    }
-
+    };
   }
-  if (pushed !== 0) throw "Unhandled push/pop";
-  return (changed ? new Point(cursor.slice(1)) : point);
+  return cursor;
 }
 
 function transformRegion(region, op) {
@@ -765,105 +506,128 @@ function transformCursor(cursor, op, isOwnOp) {
   return (changed ? new Selection(nrs) : cursor);
 }
 
-var uuid_seq = 0;
-function uuid() {
-  return uuid_seq++;
-}
 
-function identify(node) {
-  if (!Array.isArray(node)) return;
-  if (node.id === undefined) node.id = uuid();
-  node.forEach(identify);
+function __old_model_apply(doc, op1) {
+  var ops = (op1 instanceof Operations) ? op1 : Operations.fromOp(op1);
+  var seed = (doc !== null) ? doc.maxId() : 0;
+  var stack = [];
+  var stacks = [];
+  var _level = 1000000;
+  var op;
+  var offset = 0;
+  var lin;
+
+  if (ops.inputLen !== doc.length)
+    throw "Operations input length does not match document length(" + ops.inputLen + ' vs ' +  doc.length + ')';
+
+  function unwind(toLevel) {
+    var t;
+    while (_level <= toLevel && (t = stacks.pop())) {
+      _level = t.level;
+      var c = stack;
+      stack = t.stack;
+      stack.push(new t.klass(t.id, c, t.attributes));
+    }
+  }
+
+  function process(obj) {
+    var lvl;
+    if (obj instanceof TypeSpec) {
+      var c = [];
+      var klass = KLASS[obj._type] || Node;
+      var lvl = klass.prototype.level;
+      if (lvl >= _level) unwind(lvl);
+      stacks.push({stack: stack, klass: klass, level: _level, id: obj.id, attributes: obj.attributes});
+      stack = [];
+      _level = lvl;
+      
+    } else if (typeof obj === 'string' && 
+      typeof stack[stack.length - 1] === 'string') {
+      stack[stack.length - 1] = stack[stack.length - 1] + obj;
+    } else {
+      lvl = level(obj);
+      if (lvl >= _level) unwind(lvl);
+      stack.push(obj);
+    }
+  }
+
+  function fromObj(obj) {
+    if (typeof obj === 'string') return obj;
+    if (obj._type)  return new TypeSpec(obj._type, obj.id || ++seed, obj.attributes);
+    if (obj.tag)    return new Tag(obj.tag, obj.value);
+    if (obj.endTag) return new EndTag(obj.endTag);
+    //if (obj.attrib) return new Attrib(obj.attrib, obj.value);
+    return obj;
+  }
+
+  for (var i = 0; i < ops.ops.length; i++) {
+    var op = ops.ops[i];
+    if (ops.isRetain(op)) {
+      lin = doc.prefix(offset, offset + op.n, false, _level);
+      lin.forEach(process);
+    } else if (ops.isInsert(op)) {
+      process(fromObj(op.str));
+    } else { //remove
+      //TODO: check that remove actually matches
+    }
+    offset += op.inputLen;
+  };
+  unwind(1000000);
+  return stack.pop();
 }
 
 function apply(d,ops) {
-  //stack and t(op) for traversing output documrny
+  //stack and t(op) for traversing output document
   var stack = []
   var t = [];
-  //stack and top(dp) for traversing input document
-  var docStack = [];
-  var dp = [d]; //wrap the doc so we can do [r(1)] and change nothing.
-  var o = 0;
+  var op;
+  var offset = 0;
 
-  //ensure document is identified (assumes that if doc is identified then children are too)
-  if (d.id === undefined) identify(d);
+  //stack for traversing the document
+  var docStack = [];
+  var dp = d;
+  var index = 0; //offset in element
 
   function append(vals) {
     if (typeof t === 'string') {
       t += vals
     } else {
       var id = t.id;
-      identify(vals)
       t = t.concat(vals);
       t.id = id;
     }
   }
 
+  function retain(n, attributes, unattribute) {
+
+  }
+
   for (var i = 0; i < ops.length; i++) {
-    var op = ops[i];
+    op = ops[i];
     switch (op.op) {
       case INSERT:
-        append(op.values);
+        process(op);
         break;
       case RETAIN:
-        append(dp.slice(o,o+op.n));
-        o += op.n;
-        break;
-      case PUSH:
-        stack.push(t);
-        if (typeof op.kind === 'string') {
-          t = ""
-        } else {
-          t = [];
-          t.id = uuid();
-        }
-        break;
-      case POP:
-        var temp = t;
-        t = stack.pop();
-        t.push(temp);
+        lin = prefix(doc, offset, offset + op.n);
+        //TODO: unattribute
+        //TODO: attribute
+        lin.forEach(process);
+        offset += op.n;
         break;
       case DELETE:
-        o += op.n;
-        break;
-      case UNPUSH:
-        //move deeper into the doc
-        docStack.push({o:o, dp:dp});
-        dp = dp[o];
-        o = 0;
-        break;
-      case UNPOP:
-        //move shallower in the doc
-        var _d = docStack.pop();
-        dp = _d.dp;
-        o = _d.o + 1;
-        break;
-      case UP:
-        //move deeper into the output
-        stack.push(t);
-        t = (typeof op.kind === 'string') ? "" : [];
-        //move deeper into the doc
-        docStack.push({o:o, dp:dp});
-        dp = dp[o];
-        o = 0;
-        //maintain ids
-        t.id = dp.id;
-        break;
-      case DOWN:
-        //move shallower in the doc
-        var _d = docStack.pop();
-        dp = _d.dp;
-        o = _d.o + 1;
-        //move shallower in the output
-        var temp = t;
-        t = stack.pop();
-        t.push(temp);
+        offset += op.n;
         break;
       default:
         //do nothing for Start and End.
         break;
     }
   };
+
+  if (offset < d.size) {
+      lin = prefix(doc, offset, d.size);
+      lin.forEach(process);
+  }
 
   return t[0];
 }
@@ -876,8 +640,6 @@ module.exports = {
   compose: compose,
   invert: invert,
   transformCursor: transformCursor,
-  identify: identify,
-  Point: Point,
   Region: Region,
   Selection: Selection,
   diff: diff,
@@ -886,14 +648,8 @@ module.exports = {
     insert  : _i,
     "delete": _d,
     pop     : pop,
-    unpop   : unpop,
     pushA   : pushA,
     pushS   : pushS,
-    unpushA : unpushA,
-    unpushS : unpushS,
-    upA     : upA,
-    upS     : upS,
-    down    : down,
     start   : start,
     end     : end,
   },
