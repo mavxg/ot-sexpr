@@ -29,7 +29,6 @@ var UNDEFINED;
 
 var doca = parse('{"title":"Tests"}(doc (p "Hello, World!"))')[0];
 var docb = parse('{"title":"Tests"}(doc [[7,{}],[6,{"bold":true}]](p "Hello, World!"))')[0];
-var docadi = parse('{"title":"Tests"}(doc (p "Hello, Cruel Barnabus"))')[0];
 
 //insert text
 var opa = [r(12),i("Cruel ","char")];
@@ -77,7 +76,7 @@ var opap = [r(12),i("Cruel ","char")];
 //target transformed by opu
 //var opbpu = [upA,r(2),upA,r(2),upS,r(7),
 //  pop,pushA,i([bold,[]]),pushS,r(12),pop,down,down,down];
-var opapu  = [r(4),i("Cruel ","char")];
+var opapu  = [r(11),i("Cruel ","char")];
 var opapuu = [r(3),i("Cruel ","char")];
 var opapup = [r(3),i("Cruel ","char")];
 
@@ -157,13 +156,13 @@ describe('Transform', function() {
   it ('Can transform insert by delete', function() {
     var p = transform(opa,opdi);
     var d = apply(apply(doca,opdi),p);
-    assert.equal(JSON.stringify(docadi),JSON.stringify(d));
+    assert.equal(d.toSexpr(),'{"title":"Tests"}(doc (p "Hello, Cruel Barnabus"))');
   });
 
   it ('Can transform delete by insert', function() {
     var p = transform(opdi,opa,'left');
     var d = apply(apply(doca,opa),p);
-    assert.equal(JSON.stringify(docadi),JSON.stringify(d));
+    assert.equal(d.toSexpr(),'{"title":"Tests"}(doc (p "Hello, Cruel Barnabus"))');
   });
 });
 
