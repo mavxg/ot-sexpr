@@ -695,9 +695,9 @@ function apply(d,ops) {
           } else {
             var n = new List(c.id, c.attributes);
             if (unattributes)
-                c = c.unsetAttributes(unattributes);
+                n = n.unsetAttributes(unattributes);
             if (attributes)
-                c = c.setAttributes(attributes);
+                n = n.setAttributes(attributes);
             //go deeper into the output stack
             stack.push(t);
             t = n;
