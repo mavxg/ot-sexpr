@@ -595,7 +595,13 @@ function apply(d,ops) {
   var isString = false;
 
   function process(op) {
-    //TODO: process an insert op.
+    switch (op.type) {
+      case CHAR:
+        if (!isString) throw "Can only insert character in a string";
+        t = t.add(op.value, op.attributes);
+        break;
+        //TODO: other insert types
+    }
   }
 
   function del(length) {
