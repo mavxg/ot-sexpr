@@ -102,7 +102,7 @@ describe('Compose', function() {
 
 describe('Apply', function() {
   it ('Can apply unpush/push', function() {
-    var d = apply(doca, opu);
+    var d = apply(doca, opup);
     assert.equal(d.toSexpr(),'{"title":"Tests"}(doc p ("Hello, World!"))')
   });
 });

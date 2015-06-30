@@ -15,6 +15,7 @@ var Region = require('./lib/region');
 var Selection = require('./lib/selection');
 var List = require('./lib/list');
 var AttributedString = require('./lib/string');
+var sym = require('./lib/symbol').sym;
 
 //op types
 var RETAIN  = "retain";
@@ -600,7 +601,24 @@ function apply(d,ops) {
         if (!isString) throw "Can only insert character in a string";
         t = t.add(op.value, op.attributes);
         break;
-        //TODO: other insert types
+      case PUSH:
+        stack.push(t);
+        if (op.value === LIST)
+          t = new List(UNDEFINED, op.attributes);
+        else
+          t = new AttributedString("");
+        break;
+      case POP:
+        var tmp = stack.pop();
+        tmp.push(t);
+        t = tmp;
+        break;
+      case SYMBOL:
+        t.push(sym(op.value));
+        break;
+      default:
+        t.push(op.value);
+        break;
     }
   }
 
