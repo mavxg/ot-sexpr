@@ -77,9 +77,9 @@ var equal = require('./lib/is').equal;
 
 function _trim(ops) {
   i = ops.length-1;
-  while (i > 0) {
+  while (i >= 0) {
     var op = ops[i];
-    if (op.op !== RETAIN || !!op.attributes || !!op.unattributes)
+    if (op.op !== RETAIN || op.attributes || op.unattributes)
       break;
     ops.pop();
     i--;
@@ -214,7 +214,7 @@ function _diff(source, target, path, critical) {
 function invert(ops) {
   function invertOp(op) {
     switch (op.op) {
-      case RETAIN: return op;
+      case RETAIN: return r(op.n, op.unattributes, op.attributes);
       case INSERT: return _d(op.value, op.type, op.attributes);
       case DELETE: return _i(op.value, op.type, op.unattributes);
     }
@@ -275,6 +275,8 @@ function makeTake(ops) {
   }
 }
 
+var UNDEFINED;
+
 function compose(opA, opB) {
   var result = [];
   var critical = 0;
@@ -294,11 +296,65 @@ function compose(opA, opB) {
       if (chunk === null) throw "Retain failed for this compose"
       switch (chunk.op) {
         case INSERT:
-          append(chunk); //TODO remove op.unattributes from chunk.attributes
-                         //     add op.attributes to chunk.attributes
+          if (op.unattributes || op.attributes) {
+            var ua = op.unattributes || {};
+            var aa = op.attributes || {};
+            var na = {};
+            var nac = 0
+            for (var k in chunk.attributes)
+              if (!ua.hasOwnProperty(k)) { //assuming they match.
+                na[k] = chunk.attributes[k];
+                nac++;
+              }
+            for (var k in aa) {
+              na[k] = aa[k];
+              nac++;
+            }
+            chunk = _i(op.value, op.type, nac > 0 ? na : UNDEFINED);
+          }
+          append(chunk);
           length -= chunk.n;
           break;
         case RETAIN:
+          if (op.unattributes || op.attributes) {
+            var ua = op.unattributes || {};
+            var aa = op.attributes || {};
+            var na = {};
+            var nu = {};
+            var nac = 0;
+            var nuc = 0
+
+            //clone
+            for (var k in chunk.attributes) {
+              na[k] = chunk.attributes[k];
+              nac++;
+            }
+            for (var k in chunk.unattributes) {
+              nu[k] = chunk.unattributes[k];
+              nuc++;
+            }
+
+            // {x:A} .... un:{x:A} a:{X:B} ... invert a:{x:A} un:{x:B} ... {}, {}
+            // {x:A} .... un:{x:A} a:{X:B} ... a:{x:C} un:{x:B} ... un {x:A}, {x:C}
+            for (var k in ua)
+              if (na.hasOwnProperty(k)) { //must be the same
+                delete na[k];
+                nac--;
+              } else {
+                nu[k] =  ua[k];
+                nuc++;
+              }
+
+            for (var k in aa)
+              if (nu[k] === aa[k]) {
+                delete nu[k];
+                nuc--;
+              } else {
+                na[k] = aa[k];
+                nac++;
+              }
+            chunk = r(op.n, nac > 0 ? na : UNDEFINED, nuc > 0 ? nu : UNDEFINED);
+          }
           append(chunk); //TODO remove op.unattributes from chunk.attributes or add to chunk.unattributes
                          //     add op.attributes to chunk.attributes
           length -= chunk.n;
