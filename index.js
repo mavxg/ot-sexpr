@@ -476,7 +476,6 @@ function transform(opA, opB, side) {
 function transformPoint(point, ops) {
   var pos = 0
   var cursor = point;
-
   for (var i=0; i < ops.length; i++) {
     var c = ops[i];
     var op_type = c.op;
@@ -486,6 +485,7 @@ function transformPoint(point, ops) {
     switch (op_type) {
       case INSERT:
         cursor += c.n;
+        break;
       case RETAIN:
         pos += c.n;
         break;
@@ -522,76 +522,6 @@ function transformCursor(cursor, op, isOwnOp) {
     nrs.push(region);
   };
   return (changed ? new Selection(nrs) : cursor);
-}
-
-
-function __old_model_apply(doc, op1) {
-  var ops = (op1 instanceof Operations) ? op1 : Operations.fromOp(op1);
-  var seed = (doc !== null) ? doc.maxId() : 0;
-  var stack = [];
-  var stacks = [];
-  var _level = 1000000;
-  var op;
-  var offset = 0;
-  var lin;
-
-  if (ops.inputLen !== doc.length)
-    throw "Operations input length does not match document length(" + ops.inputLen + ' vs ' +  doc.length + ')';
-
-  function unwind(toLevel) {
-    var t;
-    while (_level <= toLevel && (t = stacks.pop())) {
-      _level = t.level;
-      var c = stack;
-      stack = t.stack;
-      stack.push(new t.klass(t.id, c, t.attributes));
-    }
-  }
-
-  function process(obj) {
-    var lvl;
-    if (obj instanceof TypeSpec) {
-      var c = [];
-      var klass = KLASS[obj._type] || Node;
-      var lvl = klass.prototype.level;
-      if (lvl >= _level) unwind(lvl);
-      stacks.push({stack: stack, klass: klass, level: _level, id: obj.id, attributes: obj.attributes});
-      stack = [];
-      _level = lvl;
-      
-    } else if (typeof obj === 'string' && 
-      typeof stack[stack.length - 1] === 'string') {
-      stack[stack.length - 1] = stack[stack.length - 1] + obj;
-    } else {
-      lvl = level(obj);
-      if (lvl >= _level) unwind(lvl);
-      stack.push(obj);
-    }
-  }
-
-  function fromObj(obj) {
-    if (typeof obj === 'string') return obj;
-    if (obj._type)  return new TypeSpec(obj._type, obj.id || ++seed, obj.attributes);
-    if (obj.tag)    return new Tag(obj.tag, obj.value);
-    if (obj.endTag) return new EndTag(obj.endTag);
-    //if (obj.attrib) return new Attrib(obj.attrib, obj.value);
-    return obj;
-  }
-
-  for (var i = 0; i < ops.ops.length; i++) {
-    var op = ops.ops[i];
-    if (ops.isRetain(op)) {
-      lin = doc.prefix(offset, offset + op.n, false, _level);
-      lin.forEach(process);
-    } else if (ops.isInsert(op)) {
-      process(fromObj(op.str));
-    } else { //remove
-      //TODO: check that remove actually matches
-    }
-    offset += op.inputLen;
-  };
-  unwind(1000000);
-  return stack.pop();
 }
 
 function apply(d,ops) {

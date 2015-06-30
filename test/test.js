@@ -32,7 +32,7 @@ var docdi = parse('{"title":"Tests"}(doc (p "Hello, Barnabus"))')[0];
 var docadi = parse('{"title":"Tests"}(doc (p "Hello, Cruel Barnabus"))')[0];
 
 //insert text
-var opa = [r(11),i("Cruel ")];
+var opa = [r(11),i("Cruel ","char")];
 //bold text
 var opb = [r(11),r(6,{bold:true})];
 
