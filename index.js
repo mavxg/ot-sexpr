@@ -37,7 +37,10 @@ var LIST    = "list";
 //linearisation
 var pushA = function(attributes) { return {op:INSERT, value:LIST, type:PUSH, n:1, attributes:attributes}; }
 var pushS = function(attributes) { return {op:INSERT, value:STRING, type:PUSH, n:1, attributes:attributes}; }
+var unpushA = function(attributes) { return {op:DELETE, value:LIST, type:PUSH, n:1, unattributes:attributes}; }
+var unpushS = function(attributes) { return {op:DELETE, value:STRING, type:PUSH, n:1, unattributes:attributes}; }
 var pop   = {op:INSERT, type:POP, n:1};
+var unpop = {op:DELETE, type:POP, n:1};
 
 //critical regions
 var start   = {op:START};
@@ -71,6 +74,18 @@ function _d(vs, type, attributes) {
 var equal = require('./lib/is').equal;
 
 //we might have the pops the wrong way up... (at the moment we don't check kind)
+
+function _trim(ops) {
+  i = ops.length-1;
+  while (i > 0) {
+    var op = ops[i];
+    if (op.op !== RETAIN || !!op.attributes || !!op.unattributes)
+      break;
+    ops.pop();
+    i--;
+  }
+  return ops;
+}
 
 //RULES
 // [r(a),r(b)] -> [r(a+b)] iff attributes match
@@ -357,7 +372,7 @@ function compose(opA, opB) {
   while ((chunk = take(-1)))
     append(chunk);
 
-  return result;
+  return _trim(result);
 }
 
 function transform(opA, opB, side) {
@@ -455,7 +470,7 @@ function transform(opA, opB, side) {
   while ((chunk = take(-1)))
     append(chunk);
 
-  return result;
+  return _trim(result);
 }
 
 function transformPoint(point, ops) {
@@ -782,6 +797,9 @@ module.exports = {
     pop     : pop,
     pushA   : pushA,
     pushS   : pushS,
+    unpop   : unpop,
+    unpushA : unpushA,
+    unpushS : unpushS,
     start   : start,
     end     : end,
   },
