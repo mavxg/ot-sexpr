@@ -275,6 +275,34 @@ describe('Replace', function() {
     var d = apply(docs, op);
     assert.equal(d.toSexpr(), '(doc (p "Hello, Sexy!"))');
   });
+
+  it ('Can replace text and attributes', function() {
+    var r = new Region(12,18);
+    var op = docs.replaceText(r, "Sexy!", {bold:true});
+    var d = apply(docs, op);
+    assert.equal(d.toSexpr(), '(doc (p [[7,{}],[5,{"bold":true}]]"Hello, Sexy!"))');
+  });
+
+  it ('Can replace text before existing attributes', function() {
+    var r = new Region(12,12);
+    var op = docsb.replaceText(r,"Cruel ");
+    var d = apply(docsb, op);
+    assert.equal(d.toSexpr(), '(doc (p [[13,{}],[6,{"bold":true}]]"Hello, Cruel World!"))');
+  });
+
+  it ('Can replace text within existing attributes', function() {
+    var r = new Region(13,17);
+    var op = docsb.replaceText(r,"aldo");
+    var d = apply(docsb, op);
+    assert.equal(d.toSexpr(), '(doc (p [[7,{}],[6,{"bold":true}]]"Hello, Waldo!"))');
+  });
+
+  it ('Can replace text after existing attributes', function() {
+    var r = new Region(18,18);
+    var op = docsb.replaceText(r," You bold thing.");
+    var d = apply(docsb, op);
+    assert.equal(d.toSexpr(), '(doc (p [[7,{}],[22,{"bold":true}]]"Hello, World! You bold thing."))');
+  });
 });
 
 describe('Attribute', function() {
