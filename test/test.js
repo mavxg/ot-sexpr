@@ -349,6 +349,23 @@ describe('Unattribute', function() {
     var d = apply(docsb, op);
     assert.equal(d.toSexpr(), '(doc (p "Hello, World!"))');
   });
+
+  it ('Can bold/italic and then unitalic text', function() {
+    var r = new Region(3,14);
+    var op = docsb.attribute(r, {bold:true,italic:true}, 'text');
+    var d = apply(docsb, op);
+    var opu = d.unattribute(r, {italic:true}, 'text');
+    var du = apply(d, opu)
+    assert.equal(du.toSexpr(), '(doc (p [[13,{"bold":true}]]"Hello, World!"))');
+  });
+
+  it ('Can untitle document', function() {
+    var r = new Region(0,14);
+    var op = doca.unattribute(r, {"title":"Tests"});
+    var d = apply(doca, op);
+    assert.equal(d.toSexpr(), '(doc (p "Hello, World!"))');
+  });
+
 });
 
 describe('isText', function() {
