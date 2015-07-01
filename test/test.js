@@ -395,6 +395,67 @@ describe('isText', function() {
   });
 });
 
+function MockStore(doc, ottype) {
+  this.snapshot = doc;
+  this.ottype = ottype;
+  this.api = ottype.api(this.getSnaphot.bind(this), this.submitOp.bind(this));
+};
+MockStore.prototype.getSnaphot = function() {
+  return this.snapshot;
+};
+MockStore.prototype.submitOp = function(op) {
+  this.snapshot = this.ottype.apply(this.snapshot, op);
+};
+
+
 describe('API', function() {
-  //
+  var doca  = parse('(doc (p "Hello, World!") (p "It\'s me, Ben."))')[0];
+  var docb  = parse('(doc (p [[13,{"bold":true}]]"Hello, World!") (p [[13,{"bold":true}]]"It\'s me, Ben."))')[0];
+
+
+  it ('Can insertTexts', function() {
+    var sel = new Selection([new Region(12), new Region(32)]);
+    var store = new MockStore(doca, ot);
+    store.api.replaceText(sel, "Cruel ");
+    assert.equal(store.getSnaphot().toSexpr(),'(doc (p "Hello, Cruel World!") (p "It\'s me, Cruel Ben."))')
+  });
+
+  it ('Can insertTexts with attributes', function() {
+    var sel = new Selection([new Region(12), new Region(32)]);
+    var store = new MockStore(doca, ot);
+    store.api.replaceText(sel, "Cruel ", {bold:true});
+    assert.equal(store.getSnaphot().toSexpr(),
+      '(doc (p [[7,{}],[6,{"bold":true}],[6,{}]]"Hello, Cruel World!") (p [[9,{}],[6,{"bold":true}],[4,{}]]"It\'s me, Cruel Ben."))')
+  });
+
+  it ('Can replaceTexts', function() {
+    var sel = new Selection([new Region(13,17), new Region(33,35)]);
+    var store = new MockStore(doca, ot);
+    store.api.replaceText(sel, "ane");
+    assert.equal(store.getSnaphot().toSexpr(),
+      '(doc (p "Hello, Wane!") (p "It\'s me, Bane."))');
+  });
+
+  it ('Can replace atomic', function() {
+    var sel = new Selection([new Region(21,22)]);
+    var store = new MockStore(doca, ot);
+    store.api.replace(sel, [i('li','sym')]);
+    assert.equal(store.getSnaphot().toSexpr(),'(doc (p "Hello, World!") (li "It\'s me, Ben."))');
+  });
+
+  it ('Can bold text', function() {
+    var sel = new Selection([new Region(12,18), new Region(32,36)]);
+    var store = new MockStore(doca, ot);
+    store.api.setAttributes(sel, {bold:true}, 'text');
+    assert.equal(store.getSnaphot().toSexpr(),
+      '(doc (p [[7,{}],[6,{"bold":true}]]"Hello, World!") (p [[9,{}],[4,{"bold":true}]]"It\'s me, Ben."))');
+  });
+
+  it ('Can unbold texts', function() {
+    var sel = new Selection([new Region(12,18), new Region(32,36)]);
+    var store = new MockStore(docb, ot);
+    store.api.unsetAttributes(sel, {bold:true}, 'text');
+    assert.equal(store.getSnaphot().toSexpr(),
+      '(doc (p [[7,{"bold":true}],[6,{}]]"Hello, World!") (p [[9,{"bold":true}],[4,{}]]"It\'s me, Ben."))');
+  });
 });
