@@ -27,9 +27,11 @@ var unpop = opt.unpop;
 
 var UNDEFINED;
 
-var docs = parse('(doc (p "Hello, World!"))')[0];
+var docs  = parse('(doc (p "Hello, World!"))')[0];
+var docsb = parse('(doc (p [[7,{}],[6,{"bold":true}]]"Hello, World!"))')[0];
+
 var doca = parse('{"title":"Tests"}(doc (p "Hello, World!"))')[0];
-var docb = parse('{"title":"Tests"}(doc [[7,{}],[6,{"bold":true}]](p "Hello, World!"))')[0];
+var docb = parse('{"title":"Tests"}(doc (p [[7,{}],[6,{"bold":true}]]"Hello, World!"))')[0];
 
 //insert text
 var opa = [r(12),i("Cruel ","char")];
@@ -240,7 +242,31 @@ describe('Insert', function() {
     var op = docs.insertText(12,"Cruel ");
     var d = apply(docs, op);
     assert.equal(d.toSexpr(), '(doc (p "Hello, Cruel World!"))');
-  })
+  });
+
+  it ('Can insert text and attributes', function() {
+    var op = docs.insertText(12,"Cruel ",{bold:true});
+    var d = apply(docs, op);
+    assert.equal(d.toSexpr(), '(doc (p [[7,{}],[6,{"bold":true}],[6,{}]]"Hello, Cruel World!"))');
+  });
+
+  it ('Can insert text before existing attributes', function() {
+    var op = docsb.insertText(12,"Cruel ");
+    var d = apply(docsb, op);
+    assert.equal(d.toSexpr(), '(doc (p [[13,{}],[6,{"bold":true}]]"Hello, Cruel World!"))');
+  });
+
+  it ('Can insert text within existing attributes', function() {
+    var op = docsb.insertText(17,"ly");
+    var d = apply(docsb, op);
+    assert.equal(d.toSexpr(), '(doc (p [[7,{}],[8,{"bold":true}]]"Hello, Worldly!"))');
+  });
+
+  it ('Can insert text after existing attributes', function() {
+    var op = docsb.insertText(18," You bold thing.");
+    var d = apply(docsb, op);
+    assert.equal(d.toSexpr(), '(doc (p [[7,{}],[22,{"bold":true}]]"Hello, World! You bold thing."))');
+  });
 });
 
 describe('Replace', function() {
