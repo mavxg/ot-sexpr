@@ -7,7 +7,8 @@
 * [X] add isText tests
 * [X] add insert tests
 * [X] add replace tests
-* [ ] add attribute tests
+* [X] add attribute tests
+* [ ] add unattribute tests
 * [X] api uses selection and do ops.
 * [ ] add api tests
 

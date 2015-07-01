@@ -325,6 +325,21 @@ describe('Attribute', function() {
     var d = apply(docsb, op);
     assert.equal(d.toSexpr(), '(doc (p [[9,{"bold":true,"italic":true}],[4,{"bold":true}]]"Hello, World!"))');
   });
+
+  it ('Can add single attribute to paragraph', function() {
+    var r = new Region(2,5);
+    var op = docs.attribute(r, {img:"http://images/me.jpg"});
+    var d = apply(docs, op);
+    assert.equal(d.toSexpr(), '(doc {"img":"http://images/me.jpg"}(p "Hello, World!"))');
+  });
+
+  it ('Can add multiple attributes to paragraph', function() {
+    var r = new Region(2,5);
+    var op = docs.attribute(r, {img:"http://images/me.jpg",style:"grid"});
+    var d = apply(docs, op);
+    assert.equal(d.toSexpr(), '(doc {"img":"http://images/me.jpg","style":"grid"}(p "Hello, World!"))');
+  });
+
 });
 
 describe('Unattribute', function() {
