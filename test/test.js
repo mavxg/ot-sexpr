@@ -237,7 +237,6 @@ describe('TransformCursor', function() {
 });
 
 describe('Insert', function() {
-  //
   it ('Can insert text', function() {
     var op = docs.insertText(12,"Cruel ");
     var d = apply(docs, op);
@@ -270,7 +269,12 @@ describe('Insert', function() {
 });
 
 describe('Replace', function() {
-  //
+  it ('Can replace text', function() {
+    var r = new Region(12,17);
+    var op = docs.replaceText(r, "Sexy");
+    var d = apply(docs, op);
+    assert.equal(d.toSexpr(), '(doc (p "Hello, Sexy!"))');
+  });
 });
 
 describe('Attribute', function() {
