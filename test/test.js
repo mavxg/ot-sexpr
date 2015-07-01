@@ -3,13 +3,13 @@ var expect = chai.expect;
 var assert = chai.assert;
 
 var ot = require('../');
-var parse = require('../lib/parser');
+var parse = ot.parse;
 
 var compose = ot.compose;
 var transform = ot.transform;
 var invert = ot.invert;
 var apply = ot.apply;
-var opt = ot.optypes;
+var opt = ot.operations;
 var transformCursor = ot.transformCursor
 
 var Region = ot.Region;
@@ -27,6 +27,7 @@ var unpop = opt.unpop;
 
 var UNDEFINED;
 
+var docs = parse('(doc (p "Hello, World!"))')[0];
 var doca = parse('{"title":"Tests"}(doc (p "Hello, World!"))')[0];
 var docb = parse('{"title":"Tests"}(doc [[7,{}],[6,{"bold":true}]](p "Hello, World!"))')[0];
 
@@ -231,8 +232,25 @@ describe('TransformCursor', function() {
     var ns = transformCursor(s, opbh);
     assert.equal(JSON.stringify(ns),JSON.stringify(sh));
   });
+});
 
-  //it ('Push pop surrounding deepens cursor', function() {
-    //TODO
-  //});
+describe('Insert', function() {
+  //
+  it ('Can insert text', function() {
+    var op = docs.insertText(12,"Cruel ");
+    var d = apply(docs, op);
+    assert.equal(d.toSexpr(), '(doc (p "Hello, Cruel World!"))');
+  })
+});
+
+describe('Replace', function() {
+  //
+});
+
+describe('Attribute', function() {
+  //
+});
+
+describe('Unattribute', function() {
+  //
 });

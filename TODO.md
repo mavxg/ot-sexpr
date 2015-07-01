@@ -11,7 +11,7 @@
 * [ ] add insert tests
 * [ ] add replace tests
 * [ ] add attribute tests
-* [ ] remove api
+* [ ] api uses selection and do ops.
 
 * [ ] move insert and delete operations to the document and dump the api
 
