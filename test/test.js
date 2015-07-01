@@ -315,7 +315,6 @@ describe('Attribute', function() {
   it ('Can bold text with existing bold', function() {
     var r = new Region(3,14);
     var op = docsb.attribute(r, {bold:true}, 'text');
-    console.log(op)
     var d = apply(docsb, op);
     assert.equal(d.toSexpr(), '(doc (p [[13,{"bold":true}]]"Hello, World!"))');
   });
@@ -323,7 +322,6 @@ describe('Attribute', function() {
   it ('Can bold/italic text with existing bold', function() {
     var r = new Region(3,14);
     var op = docsb.attribute(r, {bold:true,italic:true}, 'text');
-    console.log(op)
     var d = apply(docsb, op);
     assert.equal(d.toSexpr(), '(doc (p [[9,{"bold":true,"italic":true}],[4,{"bold":true}]]"Hello, World!"))');
   });
