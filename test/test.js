@@ -343,7 +343,12 @@ describe('Attribute', function() {
 });
 
 describe('Unattribute', function() {
-  //
+  it ('Can unbold text', function() {
+    var r = new Region(3,18);
+    var op = docsb.unattribute(r, {bold:true}, 'text');
+    var d = apply(docsb, op);
+    assert.equal(d.toSexpr(), '(doc (p "Hello, World!"))');
+  });
 });
 
 describe('isText', function() {
