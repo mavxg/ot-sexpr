@@ -1,13 +1,19 @@
 # TODO
 
-* [ ] Fixup tests to match new format
-* [ ] transformCursor(cursor, op, isOwnOp)
+* [x] Fixup tests to match new format
+* [x] transformCursor(cursor, op, isOwnOp)
 * [ ] insert at path (api)
 * [ ] replace region (api)
       Takes an operation (which might just be an insert)
 * [ ] Simple Diff to Operations.
 * [ ] Run ottypes/fuzzer against type.
+* [ ] add isText tests
+* [ ] add insert tests
+* [ ] add replace tests
+* [ ] add attribute tests
+* [ ] remove api
 
+* [ ] move insert and delete operations to the document and dump the api
 
 # IDEAS
 

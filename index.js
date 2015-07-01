@@ -799,6 +799,7 @@ module.exports = {
   Region: Region,
   Selection: Selection,
   diff: diff,
+  push: _push,
   optypes: {
     retain  : r,
     insert  : _i,
