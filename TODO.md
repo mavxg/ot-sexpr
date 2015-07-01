@@ -3,6 +3,7 @@
 * [X] Fixup tests to match new format
 * [X] transformCursor(cursor, op, isOwnOp)
 * [ ] Simple Diff to Operations.
+* [ ] Diff tests
 * [ ] Run ottypes/fuzzer against type.
 * [X] add isText tests
 * [X] add insert tests
@@ -10,7 +11,7 @@
 * [X] add attribute tests
 * [X] add unattribute tests
 * [X] api uses selection and do ops.
-* [ ] add api tests
+* [X] add api tests
 
 # IDEAS
 
