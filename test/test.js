@@ -214,7 +214,6 @@ describe('Section', function() {
   });
 });
 
-
 describe('TransformCursor', function() {
   var s = new Selection([new Region(12)]);
   var sbf = new Selection([new Region(10)]);
@@ -310,5 +309,36 @@ describe('Attribute', function() {
 });
 
 describe('Unattribute', function() {
+  //
+});
+
+describe('isText', function() {
+  it ('Before start of text', function() {
+    var b = docs.isText(4);
+    assert.equal(b, false);
+  });
+
+  it ('Start of text', function() {
+    var b = docs.isText(5);
+    assert.equal(b, true);
+  });
+
+  it ('Middle of text', function() {
+    var b = docs.isText(8);
+    assert.equal(b, true);
+  });
+
+  it ('End of text', function() {
+    var b = docs.isText(18);
+    assert.equal(b, true);
+  });
+
+  it ('Outside string', function() {
+    var b = docs.isText(2);
+    assert.equal(b, false);
+  });
+});
+
+describe('API', function() {
   //
 });

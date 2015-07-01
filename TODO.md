@@ -1,15 +1,15 @@
 # TODO
 
-* [x] Fixup tests to match new format
-* [x] transformCursor(cursor, op, isOwnOp)
+* [X] Fixup tests to match new format
+* [X] transformCursor(cursor, op, isOwnOp)
 * [ ] insert at path (api)
 * [ ] replace region (api)
       Takes an operation (which might just be an insert)
 * [ ] Simple Diff to Operations.
 * [ ] Run ottypes/fuzzer against type.
-* [ ] add isText tests
-* [ ] add insert tests
-* [ ] add replace tests
+* [X] add isText tests
+* [X] add insert tests
+* [X] add replace tests
 * [ ] add attribute tests
 * [ ] api uses selection and do ops.
 
