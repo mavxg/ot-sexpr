@@ -26,7 +26,6 @@ var END     = "end";
 
 //types
 var SYMBOL  = "sym";
-var NUMBER  = "num";
 var CHAR    = "char";
 var OBJ     = "obj";
 var PUSH    = "push"; //value is LIST or STRING
