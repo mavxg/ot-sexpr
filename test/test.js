@@ -305,7 +305,19 @@ describe('Replace', function() {
 });
 
 describe('Attribute', function() {
-  //
+  it ('Can bold text', function() {
+    var r = new Region(3,18);
+    var op = docs.attribute(r, {bold:true}, 'text');
+    var d = apply(docs, op);
+    assert.equal(d.toSexpr(), '(doc (p [[13,{"bold":true}]]"Hello, World!"))');
+  });
+
+  it ('Can bold text with existing bold', function() {
+    var r = new Region(3,12);
+    var op = docsb.attribute(r, {bold:true}, 'text');
+    var d = apply(docsb, op);
+    assert.equal(d.toSexpr(), '(doc (p [[13,{"bold":true}]]"Hello, World!"))');
+  });
 });
 
 describe('Unattribute', function() {
