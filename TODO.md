@@ -8,7 +8,7 @@
 * [X] add insert tests
 * [X] add replace tests
 * [X] add attribute tests
-* [ ] add unattribute tests
+* [X] add unattribute tests
 * [X] api uses selection and do ops.
 * [ ] add api tests
 
