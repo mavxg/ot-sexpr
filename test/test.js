@@ -212,6 +212,19 @@ describe('Section', function() {
     var target = new Selection([r2a, r1a]);
     assert.equal(JSON.stringify(s),JSON.stringify(target));
   });
+
+  it ('Can slice region', function() {
+    var s = new Selection();
+    var r1 = new Region(29, 25);
+    var r2 = new Region(13, 23);
+    s = s.add(r1);
+    s = s.add(r2);
+    var ss = s.slice(22,26);
+    var r1a = new Region(29-22, 25-22);
+    var r2a = new Region(13-22, 23-22);
+    var target = new Selection([r2a, r1a]);
+    assert.equal(JSON.stringify(ss),JSON.stringify(target));
+  })
 });
 
 describe('TransformCursor', function() {
