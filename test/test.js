@@ -366,6 +366,14 @@ describe('Attribute', function() {
     assert.equal(d.toSexpr(), '(doc (section (h1 "Welcome to SlateJS") (p [[10,{}],[13,{"bold":true}]]"Welcome to your editor.") (p [[8,{"bold":true}],[68,{}],[2,{"sub":true}],[24,{}],[2,{"sup":true}],[76,{}],[16,{"href":"http://google.co.uk"}],[177,{}]]"Lorem ipsum dolor sit amet, consectetur adipisicing elit. Corrupti, aliquid ex necessitatibus repellatTM a illo fuga dolore aperiam totam tempore nisi neque delectus labore, nihil quae dignissimos dolores mollitia? Vel sunt neque voluptatibus excepturi laboriosam possimus adipisci quidem dolores, omnis nemo dolore eligendi blanditiis, voluptatem in doloribus hic aperiam.")))');
   });
 
+  
+  it ('Can attribute across existing attribute', function() {
+    var r = new Region(142,127);
+    var op = longdoc.attribute(r, {bold:true}, 'text');
+    var d = apply(longdoc, op);
+    assert.equal(d.toSexpr(), '(doc (section (h1 "Welcome to SlateJS") (p "Welcome to your editor.") (p [[69,{}],[7,{"bold":true}],[2,{"sub":true,"bold":true}],[6,{"bold":true}],[18,{}],[2,{"sup":true}],[76,{}],[16,{"href":"http://google.co.uk"}],[177,{}]]"Lorem ipsum dolor sit amet, consectetur adipisicing elit. Corrupti, aliquid ex necessitatibus repellatTM a illo fuga dolore aperiam totam tempore nisi neque delectus labore, nihil quae dignissimos dolores mollitia? Vel sunt neque voluptatibus excepturi laboriosam possimus adipisci quidem dolores, omnis nemo dolore eligendi blanditiis, voluptatem in doloribus hic aperiam.")))');
+  });
+
 });
 
 describe('Unattribute', function() {
